@@ -1,0 +1,565 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100vh;
+  font-family: "Raleway", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: #f4f6f8;
+  overflow: hidden;
+}
+
+.main-container,
+#workspace {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100vw;
+  height: 100vh;
+  overflow: auto;   /* aici trebuie scroll când nu mai încape */
+}
+
+
+.graph-area {
+  flex: 1 0 760px;
+  min-width: 760px;
+  height: 100vh;
+  overflow: auto;
+  background-color: #e0e0e0;
+  padding: 8px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+#a4-container {
+  position: relative;
+  width: calc(100% - 0px);
+  aspect-ratio: 264 / 270;
+  flex-shrink: 0;
+  min-height: 0;
+}
+
+#graph {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+}
+
+#tick-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* Etichete axe peste SVG */
+.axis-label-svg {
+  font-family: Arial, sans-serif;
+  font-size: 5px;
+  font-weight: 700;
+  fill: #00008b;
+  pointer-events: none;
+}
+
+/* Panou dreapta */
+.control-panel {
+  flex: 0 0 350px;
+  width: 350px;
+  min-width: 350px;
+  max-width: 350px;
+  height: 100vh;
+  background-color: #ffffff;
+  border-left: 1px solid #ccc;
+  padding: 12px;
+  overflow-y: auto;
+  overflow-x: auto;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 2;
+}
+
+#controls {
+  width: 100%;
+}
+
+/* Carduri */
+.card {
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  background-color: white;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.row-between {
+  justify-content: space-between;
+}
+
+.margin-b {
+  margin-bottom: 4px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.small-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #444;
+  margin-bottom: 4px;
+  font-family: "Poppins", "Segoe UI", Arial, sans-serif;
+}
+
+.tool-title {
+  font-size: 15px;
+  font-weight: 900;
+  white-space: nowrap;
+  font-family: "Poppins", "Segoe UI", Arial, sans-serif;
+}
+
+/* Inputuri */
+input {
+  border: 1px solid #ccc;
+  padding: 4px 6px;
+  border-radius: 3px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.input-xy {
+  width: 60px;
+}
+
+.input-label {
+  width: 130px;
+}
+.card-labels .input-label {
+  width: 80px;
+  min-width: 80px;
+}
+
+/* Butoane generale */
+button {
+  border: none;
+  border-radius: 7px;
+  padding: 4px 8px;
+  font-weight: 800;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* CARD 1 */
+.card-1 {
+  border: none;
+  background-color: #380072;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.text-labwork {
+  color: #FFFFFF;
+  font-weight: 900;
+  font-size: 18px;
+}
+
+.btn-save {
+  background-color: #FFFFFF;
+  color: #512DA8;
+  border: 1px solid #FFFFFF;
+  margin-left: auto;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.22);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.btn-save:hover:not(:disabled) {
+  background-color: #F8F9FA;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+  filter: none;
+}
+
+.btn-load {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+  border: 1px solid #D1C4E9;
+  box-shadow: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.btn-load:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-color: #FFFFFF;
+  transform: translateY(-1px);
+  filter: none;
+}
+
+.btn-labwork {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.card-labels {
+  border: 1.5px solid #b8c0cc;
+  background-color: white;
+  padding: 8px;
+}
+
+.card-labels .row {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-labels .tool-title {
+  white-space: nowrap;
+}
+
+.card-labels .input-label {
+  width: 100%;
+  min-width: 0;
+}
+
+
+/* CARD 2 */
+.card-2 {
+  border: 1.5px solid #b8c0cc;
+  background-color: white;
+  flex-direction: row;
+  gap: 12px;
+  padding: 8px;
+}
+
+.card-2-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.text-scale {
+  font-size: 13px;
+}
+
+.icon-square {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+/* CARD 3 */
+.card-3 {
+  border: 1px solid #8b0000;
+  background-color: white;
+}
+.text-datapoint {
+  color: #AD1457;
+}
+
+.btn-p-plus {
+  background-color: #AD1457;
+  border: 1px solid #880E4F;
+  color: white;
+  flex-grow: 1;
+  box-shadow: 0 3px 6px rgba(173, 20, 87, 0.25);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.btn-p-plus:hover:not(:disabled) {
+  background-color: #D81B60;
+  border-color: #AD1457;
+  box-shadow: 0 4px 8px rgba(173, 20, 87, 0.3);
+  transform: translateY(-1px);
+  filter: none;
+}
+
+/* CARD 4 */
+.card-4 {
+  border: 1px solid #add8e6;
+  background-color: white;
+}
+
+.text-line,
+.text-extend {
+  color: #ab0ddf;
+}
+
+.btn-start {
+  background-color: #673AB7;
+  border: 1px solid #512DA8;
+  color: white;
+  box-shadow: 0 3px 6px rgba(103, 58, 183, 0.25);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.btn-start:hover:not(:disabled) {
+  background-color: #811A71;
+  border-color: #450077;
+  box-shadow: 0 4px 8px rgba(103, 58, 183, 0.3);
+  transform: translateY(-1px);
+  filter: none;
+}
+
+.btn-start.is-active {
+  background-color: #B39DDB;
+  border: 1px solid #9575CD;
+  color: #F5F5F5;
+  box-shadow: inset 0 2px 5px rgba(81, 45, 168, 0.35);
+  filter: none;
+}
+
+.btn-start.is-active:hover {
+  background-color: #7E57C2;
+  border-color: #673AB7;
+  box-shadow: 0 4px 8px rgba(103, 58, 183, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-fix {
+  background-color: #976DB9;
+  border: 1px solid #70439B;
+  color: white;
+  box-shadow: 0 3px 6px rgba(103, 58, 183, 0.25);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.btn-fix:hover:not(:disabled) {
+  background-color: #B39DDB;
+  border-color: #7E57C2;
+  box-shadow: 0 4px 8px rgba(103, 58, 183, 0.3);
+  transform: translateY(-1px);
+  filter: none;
+}
+
+.btn-x {
+  width: 34px;
+  height: 28px;
+  background-color: transparent;
+  color: #777;
+  border: 1px solid #d0d0d0;
+  padding: 0;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-del-text {
+  background: transparent;
+  border: 1px solid #b8b8b8;
+  color: #444;
+  font-family: "Poppins", "Segoe UI", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  padding: 4px 7px;
+  border-radius: 6px;
+}
+
+.btn-del-text:hover:not(:disabled) {
+  color: #e90410;
+  border-color: #e90410;
+  background-color: #fff3f1;
+}
+
+
+.btn-x:hover:not(:disabled) {
+  color: #d65a4a;
+  border-color: #d65a4a;
+  background-color: #fff3f1;
+}
+
+/* CARD 5 */
+.card-5 {
+  border: 1px solid #f06216f4;
+  background-color: white;
+}
+
+.btn-orange {
+  background-color: #f06216f4;
+  color: white;
+}
+.text-slope {
+  color: #f06216f4;
+}
+
+/* CARD 6 */
+.card-6 {
+  border: 1px solid #9f1ef5;
+  background-color: white;
+}
+
+.text-intercepts {
+  color: #9f1ef5;
+}
+
+.btn-siclam {
+  background-color: #9f1ef5;
+  color: white;
+}
+
+/* CARD 7 */
+.card-7 {
+  border: 1px solid #ad1457;
+  background-color: #fce4ec;
+}
+
+.text-curveline {
+  color: #d51a6b;
+  font-weight: 900;
+}
+.btn-curve {
+  background-color: #AD1457;
+  border: 1px solid #880E4F;
+  color: white;
+  box-shadow: 0 3px 6px rgba(173, 20, 87, 0.25);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.btn-curve:hover:not(:disabled) {
+  background-color: #D81B60;
+  border-color: #AD1457;
+  box-shadow: 0 4px 8px rgba(173, 20, 87, 0.3);
+  transform: translateY(-1px);
+  filter: none;
+}
+
+.btn-curve-fix {
+  background-color: #F06292;
+  border: 1px solid #D81B60;
+  color: white;
+  box-shadow: 0 3px 6px rgba(173, 20, 87, 0.22);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.btn-curve-fix:hover:not(:disabled) {
+  background-color: #F48FB1;
+  border-color: #D81B60;
+  box-shadow: 0 4px 8px rgba(173, 20, 87, 0.28);
+  transform: translateY(-1px);
+  filter: none;
+}
+
+
+/* CARD 9 */
+.btn-clear-labwork {
+  width: 100%;
+  background-color: #ec2626;
+  color: white;
+  padding: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  margin-top: 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* SVG interaction helpers */
+.trend-handle,
+.curve-handle {
+  pointer-events: all;
+}
+
+.trend-hit {
+  pointer-events: stroke;
+}
+
+/* Print */
+@media print {
+  body {
+    margin: 0;
+    background: white;
+  }
+
+  .control-panel {
+    display: none;
+  }
+
+  .graph-area {
+    background: white;
+    min-height: auto;
+  }
+
+  #graph {
+    border: none;
+    box-shadow: none;
+  }
+
+  .trend-handle,
+  .trend-hit,
+  .curve-handle {
+    display: none;
+  }
+
+  @page {
+    size: 210mm 297mm;
+    margin: 0;
+  }
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #e8eef8;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #146f9c;
+  border-radius: 999px;
+  border: 2px solid #e8eef8;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #0f5578;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #146f9c #e8eef8;
+}
