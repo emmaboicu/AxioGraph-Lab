@@ -53,7 +53,8 @@ let mappedX = {};
 let mappedY = {};
 let experimentalPointsData = [];
 let slopePointsData = [];
-let intersectionPointsData = { x: null, y: null };
+let intersectionPointsData1 = { x: null, y: null };
+let intersectionPointsData2 = { x: null, y: null };
 let hasUnsavedChanges = false;
 
 const trendlineStates = {
@@ -176,8 +177,10 @@ function hasSpecialAxisMarker(axis, value) {
   if (experimentalPointsData.some(pt => axis === 'x' ? same(pt.x, value) : same(pt.y, value))) return true;
   if (slopePointsData.some(pt => pt && (axis === 'x' ? same(pt.x, value) : same(pt.y, value)))) return true;
 
-  if (axis === 'x' && intersectionPointsData.x !== null && same(intersectionPointsData.x, value)) return true;
-  if (axis === 'y' && intersectionPointsData.y !== null && same(intersectionPointsData.y, value)) return true;
+  if (axis === 'x' && intersectionPointsData1.x !== null && same(intersectionPointsData1.x, value)) return true;
+  if (axis === 'y' && intersectionPointsData1.y !== null && same(intersectionPointsData1.y, value)) return true;
+  if (axis === 'x' && intersectionPointsData2.x !== null && same(intersectionPointsData2.x, value)) return true;
+  if (axis === 'y' && intersectionPointsData2.y !== null && same(intersectionPointsData2.y, value)) return true;
 
   return false;
 }
@@ -771,8 +774,12 @@ function drawIntersectionPoint(kind, value) {
 }
 function redrawIntersectionPoints() {
   intersectionPointsGroup.innerHTML = '';
-  if (intersectionPointsData.x !== null) drawIntersectionPoint('x', intersectionPointsData.x);
-  if (intersectionPointsData.y !== null) drawIntersectionPoint('y', intersectionPointsData.y);
+
+  if (intersectionPointsData1.x !== null) drawIntersectionPoint('x', intersectionPointsData1.x);
+  if (intersectionPointsData1.y !== null) drawIntersectionPoint('y', intersectionPointsData1.y);
+
+  if (intersectionPointsData2.x !== null) drawIntersectionPoint('x', intersectionPointsData2.x);
+  if (intersectionPointsData2.y !== null) drawIntersectionPoint('y', intersectionPointsData2.y);
 }
 
 function resetIntersections() {
@@ -1164,8 +1171,10 @@ function getWorkState() {
     },
     slopePoints: slopePointsData.map(pt => pt ? { x: pt.x, y: pt.y } : null),
     intersections: {
-      x: intersectionPointsData.x !== null ? intersectionPointsData.x : null,
-      y: intersectionPointsData.y !== null ? intersectionPointsData.y : null
+      x1: intersectionPointsData1.x !== null ? intersectionPointsData1.x : null,
+      y1: intersectionPointsData1.y !== null ? intersectionPointsData1.y : null,
+      x2: intersectionPointsData2.x !== null ? intersectionPointsData2.x : null,
+      y2: intersectionPointsData2.y !== null ? intersectionPointsData2.y : null
     }
   };
 }
@@ -1234,16 +1243,23 @@ function applyWorkState(state) {
     .map(pt => pt ? ({ x: Number(pt.x), y: Number(pt.y) }) : null)
     .filter(pt => pt && !Number.isNaN(pt.x) && !Number.isNaN(pt.y));
 
-  intersectionPointsData = {
-    x: state.intersections?.x !== null && state.intersections?.x !== undefined ? Number(state.intersections.x) : null,
-    y: state.intersections?.y !== null && state.intersections?.y !== undefined ? Number(state.intersections.y) : null
+  intersectionPointsData1 = {
+  x: state.intersections?.x1 !== undefined ? Number(state.intersections.x1) : Number(state.intersections?.x),
+  y: state.intersections?.y1 !== undefined ? Number(state.intersections.y1) : Number(state.intersections?.y)
   };
 
-  if (Number.isNaN(intersectionPointsData.x)) intersectionPointsData.x = null;
-  if (Number.isNaN(intersectionPointsData.y)) intersectionPointsData.y = null;
+  intersectionPointsData2 = {
+    x: state.intersections?.x2 !== undefined ? Number(state.intersections.x2) : null,
+    y: state.intersections?.y2 !== undefined ? Number(state.intersections.y2) : null
+  };
 
-  refreshTicks();
+  if (Number.isNaN(intersectionPointsData1.x)) intersectionPointsData1.x = null;
+  if (Number.isNaN(intersectionPointsData1.y)) intersectionPointsData1.y = null;
+  if (Number.isNaN(intersectionPointsData2.x)) intersectionPointsData2.x = null;
+  if (Number.isNaN(intersectionPointsData2.y)) intersectionPointsData2.y = null;
+
   refreshScaleStepLabels();
+  refreshTicks();
   redrawExperimentalPoints();
   renderTrendline(1);
   renderTrendline(2);
@@ -1413,6 +1429,8 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
   $('reset-slope-p1').addEventListener('click', () => resetSlopePoint(0));
   $('reset-slope-p2').addEventListener('click', () => resetSlopePoint(1));
 
+  //Butoane pentru ambele drepte Axis Intercepts
+
   $('add-intersection-x').addEventListener('click', () => {
   const value = getNumberFromInput('intersection-x-value');
 
@@ -1421,7 +1439,7 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
     return;
   }
 
-  intersectionPointsData.x = value;
+  intersectionPointsData1.x = value;
   ticksX.add(value);
   refreshTicks();
   refreshScaleStepLabels();
@@ -1438,7 +1456,7 @@ $('add-intersection-y').addEventListener('click', () => {
     return;
   }
 
-  intersectionPointsData.y = value;
+  intersectionPointsData1.y = value;
   ticksY.add(value);
   refreshTicks();
   refreshScaleStepLabels();
@@ -1454,7 +1472,7 @@ $('reset-intersection-x').addEventListener('click', () => {
     ticksX.delete(value);
   }
 
-  intersectionPointsData.x = null;
+  intersectionPointsData1.x = null;
   clearInput('intersection-x-value');
 
   refreshTicks();
@@ -1471,7 +1489,7 @@ $('reset-intersection-y').addEventListener('click', () => {
     ticksY.delete(value);
   }
 
-  intersectionPointsData.y = null;
+  intersectionPointsData1.y = null;
   clearInput('intersection-y-value');
 
   refreshTicks();
@@ -1481,6 +1499,74 @@ $('reset-intersection-y').addEventListener('click', () => {
   redrawIntersectionPoints();
 });
  
+$('add-intersection-x-2').addEventListener('click', () => {
+  const value = getNumberFromInput('intersection-x-value-2');
+
+  if (valueToGridX(value) === null) {
+    alert('Verifică scara OX și valoarea intersecției.');
+    return;
+  }
+
+  intersectionPointsData2.x = value;
+  ticksX.add(value);
+  refreshTicks();
+  refreshScaleStepLabels();
+  redrawExperimentalPoints();
+  redrawSlopePoints();
+  redrawIntersectionPoints();
+});
+
+$('add-intersection-y-2').addEventListener('click', () => {
+  const value = getNumberFromInput('intersection-y-value-2');
+
+  if (valueToGridY(value) === null) {
+    alert('Verifică scara OY și valoarea intersecției.');
+    return;
+  }
+
+  intersectionPointsData2.y = value;
+  ticksY.add(value);
+  refreshTicks();
+  refreshScaleStepLabels();
+  redrawExperimentalPoints();
+  redrawSlopePoints();
+  redrawIntersectionPoints();
+});
+
+$('reset-intersection-x-2').addEventListener('click', () => {
+  const value = intersectionPointsData2.x;
+
+  if (value !== null) {
+    ticksX.delete(value);
+  }
+
+  intersectionPointsData2.x = null;
+  clearInput('intersection-x-value-2');
+
+  refreshTicks();
+  refreshScaleStepLabels();
+  redrawExperimentalPoints();
+  redrawSlopePoints();
+  redrawIntersectionPoints();
+});
+
+$('reset-intersection-y-2').addEventListener('click', () => {
+ const value = intersectionPointsData2.y;
+
+ if (value !== null) {
+    ticksY.delete(value);
+ }
+
+ intersectionPointsData2.y = null;
+ clearInput('intersection-y-value-2');
+
+  refreshTicks();
+  refreshScaleStepLabels();
+  redrawExperimentalPoints();
+  redrawSlopePoints();
+  redrawIntersectionPoints();
+});
+// aici se termină al doilea buton de intersecții cu axele
 
   $('activate-trendline-1').addEventListener('click', () => {
     resetTrendline(2);
@@ -1704,11 +1790,11 @@ function setupPointerEvents() {
       evt.preventDefault();
       const currentPoint = clampPointToGrid(getSvgPoint(evt));
 
-      if (state.dragMode === 'handle1' && index === 1) {
+      if (state.dragMode === 'handle1' && (index === 1 || index === 4)) {
         state.p1 = currentPoint;
       } else if (state.dragMode === 'handle2') {
         state.p2 = currentPoint;
-      } else if (state.dragMode === 'line' && index === 1) {
+      } else if (state.dragMode === 'line' && (index === 1 || index === 4)) {
         const rawDx = currentPoint.x - state.lastPoint.x;
         const rawDy = currentPoint.y - state.lastPoint.y;
 
