@@ -20,7 +20,7 @@ import {
   valuesToSvgPoint as sheetValuesToSvgPoint
 } from './sheet.js';
 
-// am terminat importul
+
 
 function $(id) {
   return document.getElementById(id);
@@ -200,7 +200,6 @@ function hasSpecialTextNear(axis, coord, tolerance = 5) {
 
 // funcția refreshTicks corectată:
 // - etichetele sunt SVG, nu HTML;
-// - nu mai face cârnați;
 // - nu scrie peste texte Step existente;
 // - hover-ul folosește un senzor unic pe OX și unul pe OY;
 // - hover-ul arată maxim 3 valori din zona cursorului;
