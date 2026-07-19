@@ -110,8 +110,8 @@ export function drawAxes() {
 
   const originLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   originLabel.textContent = 'O';
-  originLabel.setAttribute('x', originX);
-  originLabel.setAttribute('y', y0 + 13);
+  originLabel.setAttribute('x', originX - 6);
+  originLabel.setAttribute('y', y0 + 6);
   originLabel.setAttribute('text-anchor', 'middle');
   originLabel.setAttribute('font-size', '6');
   originLabel.setAttribute('font-family', 'Poppins, Arial, sans-serif');
