@@ -1,4 +1,4 @@
-// AxioGraph — app.js
+ // AxioGraph — app.js
 
 import {
   x0,
@@ -125,7 +125,42 @@ function valuesToSvgPoint(valueX, valueY) {
   return sheetValuesToSvgPoint(valueX, valueY, scaleXValue, scaleYValue);
 }
 
+function isOriginValue(value) {
+  return Math.abs(Number(value)) < 1e-9;
+}
+
+function addTickX(value) {
+  if (!isOriginValue(value)) ticksX.add(value);
+}
+
+function addTickY(value) {
+  if (!isOriginValue(value)) ticksY.add(value);
+}
+
+function isTickXInUse(value) {
+  return experimentalPointsData.some(pt => pt.x === value) ||
+    slopePointsData.some(pt => pt && pt.x === value) ||
+    intersectionPointsData1.x === value ||
+    intersectionPointsData2.x === value;
+}
+
+function isTickYInUse(value) {
+  return experimentalPointsData.some(pt => pt.y === value) ||
+    slopePointsData.some(pt => pt && pt.y === value) ||
+    intersectionPointsData1.y === value ||
+    intersectionPointsData2.y === value;
+}
+
+function pruneUnusedTick(axis, value) {
+  if (value === null || value === undefined || Number.isNaN(value)) return;
+
+  if (axis === 'x' && !isTickXInUse(value)) ticksX.delete(value);
+  if (axis === 'y' && !isTickYInUse(value)) ticksY.delete(value);
+}
+
 function addAxisMarker(group, axis, coord, label, color) {
+  if (isOriginValue(label)) return;
+
   const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
   const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 
@@ -563,8 +598,8 @@ function addDataPoint() {
     return;
   }
 
-  ticksX.add(valX);
-  ticksY.add(valY);
+  addTickX(valX);
+  addTickY(valY);
   experimentalPointsData.push({ x: valX, y: valY });
 
   refreshTicks();
@@ -610,8 +645,8 @@ function deleteFullDataPoint() {
 
   deletePointByValues(valX, valY);
 
-  ticksX.delete(valX);
-  ticksY.delete(valY);
+  pruneUnusedTick('x', valX);
+  pruneUnusedTick('y', valY);
 
   refreshTicks();
   refreshScaleStepLabels();
@@ -699,12 +734,12 @@ function redrawSlopePoints() {
 function resetSlopePoint(index) {
   const oldPoint = slopePointsData[index];
 
-  if (oldPoint) {
-    ticksX.delete(oldPoint.x);
-    ticksY.delete(oldPoint.y);
-  }
-
   slopePointsData[index] = null;
+
+  if (oldPoint) {
+    pruneUnusedTick('x', oldPoint.x);
+    pruneUnusedTick('y', oldPoint.y);
+  }
   refreshTicks();
   refreshScaleStepLabels();
   redrawExperimentalPoints();
@@ -720,14 +755,16 @@ function resetSlopePoint(index) {
   }
 }
 function resetSlopePoints() {
-  slopePointsData.forEach((pt) => {
+  const oldPoints = slopePointsData.slice();
+  slopePointsData = [null, null];
+
+  oldPoints.forEach((pt) => {
     if (pt) {
-      ticksX.delete(pt.x);
-      ticksY.delete(pt.y);
+      pruneUnusedTick('x', pt.x);
+      pruneUnusedTick('y', pt.y);
     }
   });
 
-  slopePointsData = [];
   slopePointsGroup.innerHTML = '';
 
   refreshTicks();
@@ -1151,8 +1188,8 @@ function getWorkState() {
     scale: { x: scaleXValue, y: scaleYValue },
     step: { x: stepXValue, y: stepYValue },
     ticks: {
-      x: Array.from(ticksX),
-      y: Array.from(ticksY)
+      x: Array.from(ticksX).filter((v) => !isOriginValue(v)),
+      y: Array.from(ticksY).filter((v) => !isOriginValue(v))
     },
     experimentalPoints: experimentalPointsData.map(pt => ({ x: pt.x, y: pt.y })),
    trendlines: {
@@ -1209,12 +1246,12 @@ function applyWorkState(state) {
 
   (state.ticks?.x || []).forEach(v => {
     const n = Number(v);
-    if (!Number.isNaN(n)) ticksX.add(n);
+    if (!Number.isNaN(n)) addTickX(n);
   });
 
   (state.ticks?.y || []).forEach(v => {
     const n = Number(v);
-    if (!Number.isNaN(n)) ticksY.add(n);
+    if (!Number.isNaN(n)) addTickY(n);
   });
 
   experimentalPointsData = (state.experimentalPoints || [])
@@ -1238,9 +1275,14 @@ function applyWorkState(state) {
   curveLineState.dragIndex = null;
   curveLineState.pointerId = null;
 
-  slopePointsData = (state.slopePoints || [])
-    .map(pt => pt ? ({ x: Number(pt.x), y: Number(pt.y) }) : null)
-    .filter(pt => pt && !Number.isNaN(pt.x) && !Number.isNaN(pt.y));
+  slopePointsData = [0, 1].map((index) => {
+    const pt = state.slopePoints?.[index];
+    if (!pt) return null;
+
+    const x = Number(pt.x);
+    const y = Number(pt.y);
+    return !Number.isNaN(x) && !Number.isNaN(y) ? { x, y } : null;
+  });
 
   intersectionPointsData1 = {
   x: state.intersections?.x1 !== undefined ? Number(state.intersections.x1) : Number(state.intersections?.x),
@@ -1397,8 +1439,8 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
     }
 
     slopePointsData[0] = { x: p1x, y: p1y };
-    ticksX.add(p1x);
-    ticksY.add(p1y);
+    addTickX(p1x);
+    addTickY(p1y);
     refreshTicks();
     refreshScaleStepLabels();
     redrawExperimentalPoints();
@@ -1416,8 +1458,8 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
     }
 
     slopePointsData[1] = { x: p2x, y: p2y };
-    ticksX.add(p2x);
-    ticksY.add(p2y);
+    addTickX(p2x);
+    addTickY(p2y);
     refreshTicks();
     refreshScaleStepLabels();
     redrawExperimentalPoints();
@@ -1439,7 +1481,7 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
   }
 
   intersectionPointsData1.x = value;
-  ticksX.add(value);
+  addTickX(value);
   refreshTicks();
   refreshScaleStepLabels();
   redrawExperimentalPoints();
@@ -1456,7 +1498,7 @@ $('add-intersection-y').addEventListener('click', () => {
   }
 
   intersectionPointsData1.y = value;
-  ticksY.add(value);
+  addTickY(value);
   refreshTicks();
   refreshScaleStepLabels();
   redrawExperimentalPoints();
@@ -1465,13 +1507,10 @@ $('add-intersection-y').addEventListener('click', () => {
 });
   
 $('reset-intersection-x').addEventListener('click', () => {
-  const value = getNumberFromInput('intersection-x-value');
-
-  if (!isNaN(value)) {
-    ticksX.delete(value);
-  }
+  const oldValue = intersectionPointsData1.x;
 
   intersectionPointsData1.x = null;
+  if (oldValue !== null) pruneUnusedTick('x', oldValue);
   clearInput('intersection-x-value');
 
   refreshTicks();
@@ -1482,13 +1521,10 @@ $('reset-intersection-x').addEventListener('click', () => {
 });
 
 $('reset-intersection-y').addEventListener('click', () => {
-  const value = getNumberFromInput('intersection-y-value');
-
-  if (!isNaN(value)) {
-    ticksY.delete(value);
-  }
+  const oldValue = intersectionPointsData1.y;
 
   intersectionPointsData1.y = null;
+  if (oldValue !== null) pruneUnusedTick('y', oldValue);
   clearInput('intersection-y-value');
 
   refreshTicks();
@@ -1507,7 +1543,7 @@ $('add-intersection-x-2').addEventListener('click', () => {
   }
 
   intersectionPointsData2.x = value;
-  ticksX.add(value);
+  addTickX(value);
   refreshTicks();
   refreshScaleStepLabels();
   redrawExperimentalPoints();
@@ -1524,7 +1560,7 @@ $('add-intersection-y-2').addEventListener('click', () => {
   }
 
   intersectionPointsData2.y = value;
-  ticksY.add(value);
+  addTickY(value);
   refreshTicks();
   refreshScaleStepLabels();
   redrawExperimentalPoints();
@@ -1533,13 +1569,10 @@ $('add-intersection-y-2').addEventListener('click', () => {
 });
 
 $('reset-intersection-x-2').addEventListener('click', () => {
-  const value = intersectionPointsData2.x;
-
-  if (value !== null) {
-    ticksX.delete(value);
-  }
+  const oldValue = intersectionPointsData2.x;
 
   intersectionPointsData2.x = null;
+  if (oldValue !== null) pruneUnusedTick('x', oldValue);
   clearInput('intersection-x-value-2');
 
   refreshTicks();
@@ -1550,13 +1583,10 @@ $('reset-intersection-x-2').addEventListener('click', () => {
 });
 
 $('reset-intersection-y-2').addEventListener('click', () => {
- const value = intersectionPointsData2.y;
-
- if (value !== null) {
-    ticksY.delete(value);
- }
+ const oldValue = intersectionPointsData2.y;
 
  intersectionPointsData2.y = null;
+ if (oldValue !== null) pruneUnusedTick('y', oldValue);
  clearInput('intersection-y-value-2');
 
   refreshTicks();
@@ -1861,7 +1891,7 @@ function init() {
   slopePointsGroup = $('slope-points');
   intersectionPointsGroup = $('intersection-points');
 
-  ;
+  initTrendlineConfigs();
 
   drawGrid();
   drawAxes();
@@ -1889,5 +1919,14 @@ function init() {
   markSaved();
 }
 
-initTrendlineConfigs();
 window.addEventListener('load', init);
+
+
+
+
+
+
+ 
+
+ 
+  
