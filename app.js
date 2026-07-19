@@ -158,7 +158,7 @@ function pruneUnusedTick(axis, value) {
   if (axis === 'y' && !isTickYInUse(value)) ticksY.delete(value);
 }
 
-function addAxisMarker(group, axis, coord, label, color) {
+function addAxisMarker(group, axis, coord, label, color, pointX = null) {
   if (isOriginValue(label)) return;
 
   const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -166,22 +166,24 @@ function addAxisMarker(group, axis, coord, label, color) {
 
   if (axis === 'x') {
     tick.setAttribute('x1', coord);
-    tick.setAttribute('y1', y0);
+    tick.setAttribute('y1', y0 - 1.5);
     tick.setAttribute('x2', coord);
-    tick.setAttribute('y2', y0 + 6);
+    tick.setAttribute('y2', y0 + 1.5);
 
     text.setAttribute('x', coord);
-    text.setAttribute('y', y0 + 10);
+    text.setAttribute('y', y0 + 7);
     text.setAttribute('text-anchor', 'middle');
   } else {
-    tick.setAttribute('x1', originX);
+    tick.setAttribute('x1', originX - 1.5);
     tick.setAttribute('y1', coord);
-    tick.setAttribute('x2', originX - 6);
+    tick.setAttribute('x2', originX + 1.5);
     tick.setAttribute('y2', coord);
 
-    text.setAttribute('x', originX - 8);
+    const labelOnRight = pointX !== null && pointX < originX;
+
+    text.setAttribute('x', labelOnRight ? originX + 2.2 : originX - 2.2);
     text.setAttribute('y', coord + 1.2);
-    text.setAttribute('text-anchor', 'end');
+    text.setAttribute('text-anchor', labelOnRight ? 'start' : 'end');
   }
   text.setAttribute('data-axis', axis);
   tick.setAttribute('stroke', color);
@@ -561,7 +563,7 @@ function drawExperimentalPoint(valueX, valueY) {
   pointGroup.appendChild(point);
 
   addAxisMarker(pointGroup, 'x', x, valueX, '#f63fcb');
-  addAxisMarker(pointGroup, 'y', y, valueY, '#f63fcb');
+  addAxisMarker(pointGroup, 'y', y, valueY, '#f63fcb',x);
 
   experimentalPointsGroup.appendChild(pointGroup);
 }
@@ -604,9 +606,7 @@ function addDataPoint() {
 
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 
   inputX.value = '';
   inputY.value = '';
@@ -630,9 +630,7 @@ function deletePointByValues(valX, valY) {
   experimentalPointsData = experimentalPointsData.filter(pt => !(pt.x === valX && pt.y === valY));
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 }
 function deleteFullDataPoint() {
   const inputX = $('point-input-x');
@@ -650,9 +648,7 @@ function deleteFullDataPoint() {
 
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 
   inputX.value = '';
   inputY.value = '';
@@ -720,7 +716,7 @@ function drawSlopePoint(pointData, label) {
   text.setAttribute('fill', '#f06216');
   group.appendChild(text);
   addAxisMarker(group, 'x', point.x, pointData.x, '#f06216');
-  addAxisMarker(group, 'y', point.y, pointData.y, '#f06216');
+  addAxisMarker(group, 'y', point.y, pointData.y, '#f06216', point.x);
 
   slopePointsGroup.appendChild(group);
 }
@@ -742,9 +738,7 @@ function resetSlopePoint(index) {
   }
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 
   if (index === 0) {
     clearInput('slope-p1-x');
@@ -769,9 +763,7 @@ function resetSlopePoints() {
 
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
    }
 
 function drawIntersectionPoint(kind, value) {
@@ -816,6 +808,15 @@ function redrawIntersectionPoints() {
 
   if (intersectionPointsData2.x !== null) drawIntersectionPoint('x', intersectionPointsData2.x);
   if (intersectionPointsData2.y !== null) drawIntersectionPoint('y', intersectionPointsData2.y);
+}
+function redrawAllSpecialPoints() {
+  experimentalPointsGroup.innerHTML = '';
+  slopePointsGroup.innerHTML = '';
+  intersectionPointsGroup.innerHTML = '';
+
+  redrawIntersectionPoints();// prioritate 1
+  redrawExperimentalPoints();// prioritate 2
+  redrawSlopePoints();// prioritate 3
 }
 
 function resetIntersections() {
@@ -1214,6 +1215,19 @@ function getWorkState() {
     }
   };
 }
+function readSavedNumber(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const number = Number(value);
+
+  if (Number.isNaN(number)) {
+    return null;
+  }
+
+  return number;
+}
 
 function applyWorkState(state) {
   if (!state || state.app !== 'AxioGraph') {
@@ -1284,24 +1298,31 @@ function applyWorkState(state) {
     return !Number.isNaN(x) && !Number.isNaN(y) ? { x, y } : null;
   });
 
-  intersectionPointsData1 = {
-  x: state.intersections?.x1 !== undefined ? Number(state.intersections.x1) : Number(state.intersections?.x),
-  y: state.intersections?.y1 !== undefined ? Number(state.intersections.y1) : Number(state.intersections?.y)
-  };
+  const savedIntersections = state.intersections || {};
 
-  intersectionPointsData2 = {
-    x: state.intersections?.x2 !== undefined ? Number(state.intersections.x2) : null,
-    y: state.intersections?.y2 !== undefined ? Number(state.intersections.y2) : null
-  };
+const savedX1 =
+  savedIntersections.x1 !== undefined
+    ? savedIntersections.x1
+    : savedIntersections.x;
 
-  if (Number.isNaN(intersectionPointsData1.x)) intersectionPointsData1.x = null;
-  if (Number.isNaN(intersectionPointsData1.y)) intersectionPointsData1.y = null;
-  if (Number.isNaN(intersectionPointsData2.x)) intersectionPointsData2.x = null;
-  if (Number.isNaN(intersectionPointsData2.y)) intersectionPointsData2.y = null;
+const savedY1 =
+  savedIntersections.y1 !== undefined
+    ? savedIntersections.y1
+    : savedIntersections.y;
+
+intersectionPointsData1 = {
+  x: readSavedNumber(savedX1),
+  y: readSavedNumber(savedY1)
+};
+
+intersectionPointsData2 = {
+  x: readSavedNumber(savedIntersections.x2),
+  y: readSavedNumber(savedIntersections.y2)
+};
 
   refreshScaleStepLabels();
   refreshTicks();
-  redrawExperimentalPoints();
+
   renderTrendline(1);
   renderTrendline(2);
   renderTrendline(3);
@@ -1309,8 +1330,8 @@ function applyWorkState(state) {
   renderTrendline(5);
   renderTrendline(6);
   renderCurveLine();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+
+  redrawAllSpecialPoints();
 
   markSaved();
 }
@@ -1438,14 +1459,26 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
       return;
     }
 
+    const oldPoint = slopePointsData[0];
+
     slopePointsData[0] = { x: p1x, y: p1y };
+
+    if (oldPoint) {
+       if (oldPoint.x !== p1x) {
+          pruneUnusedTick('x', oldPoint.x);
+        }
+
+        if (oldPoint.y !== p1y) {
+          pruneUnusedTick('y', oldPoint.y);
+        }
+    }
+
     addTickX(p1x);
     addTickY(p1y);
+
     refreshTicks();
     refreshScaleStepLabels();
-    redrawExperimentalPoints();
-    redrawSlopePoints();
-    redrawIntersectionPoints();
+    redrawAllSpecialPoints();
   });
 
   $('add-slope-p2').addEventListener('click', () => {
@@ -1457,14 +1490,26 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
       return;
     }
 
+    const oldPoint = slopePointsData[1];
+
     slopePointsData[1] = { x: p2x, y: p2y };
+
+    if (oldPoint) {
+      if (oldPoint.x !== p2x) {
+         pruneUnusedTick('x', oldPoint.x);
+      }
+
+      if (oldPoint.y !== p2y) {
+         pruneUnusedTick('y', oldPoint.y);
+      }
+    }
+
     addTickX(p2x);
     addTickY(p2y);
+
     refreshTicks();
     refreshScaleStepLabels();
-    redrawExperimentalPoints();
-    redrawSlopePoints();
-    redrawIntersectionPoints();
+    redrawAllSpecialPoints();
   });
 
   $('reset-slope-p1').addEventListener('click', () => resetSlopePoint(0));
@@ -1480,13 +1525,19 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
     return;
   }
 
+  const oldValue = intersectionPointsData1.x;
+
   intersectionPointsData1.x = value;
+
+  if (oldValue !== null && oldValue !== value) {
+     pruneUnusedTick('x', oldValue);
+  }
+
   addTickX(value);
+
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 });
 
 $('add-intersection-y').addEventListener('click', () => {
@@ -1497,13 +1548,19 @@ $('add-intersection-y').addEventListener('click', () => {
     return;
   }
 
+  const oldValue = intersectionPointsData1.y;
+
   intersectionPointsData1.y = value;
+
+  if (oldValue !== null && oldValue !== value) {
+     pruneUnusedTick('y', oldValue);
+  }
+
   addTickY(value);
+
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 });
   
 $('reset-intersection-x').addEventListener('click', () => {
@@ -1515,9 +1572,7 @@ $('reset-intersection-x').addEventListener('click', () => {
 
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 });
 
 $('reset-intersection-y').addEventListener('click', () => {
@@ -1529,9 +1584,7 @@ $('reset-intersection-y').addEventListener('click', () => {
 
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 });
  
 $('add-intersection-x-2').addEventListener('click', () => {
@@ -1542,13 +1595,19 @@ $('add-intersection-x-2').addEventListener('click', () => {
     return;
   }
 
-  intersectionPointsData2.x = value;
-  addTickX(value);
+const oldValue = intersectionPointsData2.x;
+
+intersectionPointsData2.x = value;
+
+if (oldValue !== null && oldValue !== value) {
+  pruneUnusedTick('x', oldValue);
+}
+
+addTickX(value);
+
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 });
 
 $('add-intersection-y-2').addEventListener('click', () => {
@@ -1559,13 +1618,19 @@ $('add-intersection-y-2').addEventListener('click', () => {
     return;
   }
 
-  intersectionPointsData2.y = value;
-  addTickY(value);
+const oldValue = intersectionPointsData2.y;
+
+intersectionPointsData2.y = value;
+
+if (oldValue !== null && oldValue !== value) {
+  pruneUnusedTick('y', oldValue);
+}
+
+addTickY(value);
+
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 });
 
 $('reset-intersection-x-2').addEventListener('click', () => {
@@ -1577,9 +1642,7 @@ $('reset-intersection-x-2').addEventListener('click', () => {
 
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 });
 
 $('reset-intersection-y-2').addEventListener('click', () => {
@@ -1591,9 +1654,7 @@ $('reset-intersection-y-2').addEventListener('click', () => {
 
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
-  redrawSlopePoints();
-  redrawIntersectionPoints();
+  redrawAllSpecialPoints();
 });
 // aici se termină al doilea buton de intersecții cu axele
 
@@ -1767,8 +1828,14 @@ $('reset-intersection-y-2').addEventListener('click', () => {
   });
 
   $('load-work-input').addEventListener('change', loadWorkFromFile);
+// Butonul de preview
+  $('preview-graph').addEventListener('click', () => {
+  document.body.classList.add('preview-mode');
+  });
 
-  $('clear-labwork').addEventListener('click', clearLabWork);
+  $('exit-preview').addEventListener('click', () => {
+  document.body.classList.remove('preview-mode');
+  });
 }
 
 function setupPointerEvents() {
@@ -1920,13 +1987,3 @@ function init() {
 }
 
 window.addEventListener('load', init);
-
-
-
-
-
-
- 
-
- 
-  
