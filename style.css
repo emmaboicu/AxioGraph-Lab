@@ -486,7 +486,7 @@ button:disabled {
 
 
 /* CARD 9 */
-.btn-clear-labwork {
+.btn-preview-graph {
   width: 100%;
   background-color: #ec2626;
   color: white;
@@ -562,4 +562,56 @@ button:disabled {
 * {
   scrollbar-width: thin;
   scrollbar-color: #146f9c #e8eef8;
+}
+/* Graph preview mode */
+
+/* În modul normal, butonul Back nu apare. */
+#exit-preview {
+  display: none;
+}
+
+/* În preview, panoul de comandă dispare. */
+body.preview-mode #controls-column {
+  display: none;
+}
+
+/* Fereastra nu mai are scroll în preview. */
+body.preview-mode #workspace {
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Zona graficului ocupă întreaga fereastră. */
+body.preview-mode #sheet-column {
+  flex: 1 1 auto;
+  width: 100vw;
+  min-width: 0;
+  height: 100vh;
+  padding: 4px;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Graficul încape integral și își păstrează proporțiile. */
+body.preview-mode #a4-container {
+  width: min(calc(100vw - 8px), 96vh);
+  height: auto;
+  aspect-ratio: 264 / 270;
+  flex-shrink: 0;
+}
+
+/* Butonul de revenire apare în colț. */
+body.preview-mode #exit-preview {
+  display: block;
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 100;
+  width: auto;
+  padding: 8px 12px;
+  background-color: #380072;
+  color: white;
+  border-radius: 7px;
 }
