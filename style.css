@@ -425,6 +425,50 @@ button:disabled {
   white-space: nowrap;
 }
 
+/* ==================================================
+   DETAIL VIEW — FEREASTRA LUPEI
+   ================================================== */
+
+.magnifier-lens {
+  position: absolute;
+  z-index: 80;
+  pointer-events: none;
+  overflow: hidden;
+  box-sizing: border-box;
+
+  background-color: white;
+  border: 1px solid #1f1a60;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(31, 26, 96, 0.22);
+}
+
+/* Lupa pentru OX: lată și joasă */
+.magnifier-lens.is-x {
+  width: 170px;
+  height: 90px;
+}
+
+/* Lupa pentru OY: îngustă și înaltă */
+.magnifier-lens.is-y {
+  width: 90px;
+  height: 170px;
+}
+
+.magnifier-lens[hidden] {
+  display: none;
+}
+
+#magnifier-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.magnifier-background {
+  fill: white;
+}
+
+
 /* CARD 2A: Axes Labels */
 .card-labels {
   border: 1.5px solid #b8c0cc;
