@@ -45,10 +45,58 @@
 
           <text id="axis-label-x" class="axis-label-svg" x="252" y="264" text-anchor="end"></text>
           <text id="axis-label-y" class="axis-label-svg" x="4" y="8" text-anchor="end" transform="rotate(-90 4 8)"></text>
+        
+          <!-- Zonele invizibile pentru click/tap lângă axe -->
+          <g id="magnifier-sensors" pointer-events="none"></g>
+        
         </svg>
 
 
         <div id="tick-container"></div>
+
+        <!-- Lupa Detail View -->
+          <div
+            id="magnifier-lens"
+            class="magnifier-lens"
+            hidden
+            aria-hidden="true"
+          >
+            <svg
+              id="magnifier-svg"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <!-- Fundalul alb al zonei mărite -->
+              <rect
+                class="magnifier-background"
+                x="-1000"
+                y="-1000"
+                width="3000"
+                height="3000"
+              ></rect>
+
+              <!-- Copiem straturile reale ale graficului -->
+              <use href="#grid-lines"></use>
+              <use href="#axes"></use>
+              <use href="#tick-marks"></use>
+
+              <use href="#trendline-layer-1"></use>
+              <use href="#trendline-layer-2"></use>
+              <use href="#trendline-layer-3"></use>
+              <use href="#trendline-layer-4"></use>
+              <use href="#trendline-layer-5"></use>
+              <use href="#trendline-layer-6"></use>
+              <use href="#curveline-layer"></use>
+
+              <use href="#experimental-points"></use>
+              <use href="#slope-points"></use>
+              <use href="#intersection-points"></use>
+
+              <!-- Aici vor intra ulterior etichetele colorate suprimate -->
+              <g id="magnifier-extra-labels"></g>
+            </svg>
+          </div>
+
       </div>
     </div>
 
