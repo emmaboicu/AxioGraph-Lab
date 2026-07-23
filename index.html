@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AxioGraph_4</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="style.css">
   <script type="module" src="app.js"></script>
 </head>
@@ -70,14 +75,14 @@
       type="text"
       id="axis-label-input-x"
       class="input-label"
-      placeholder="OX"
+      placeholder="x-axis"
     >
 
     <input
       type="text"
       id="axis-label-input-y"
       class="input-label"
-      placeholder="OY"
+      placeholder="y-axis"
     >
   </div>
 </div>
@@ -85,7 +90,7 @@
 <!-- CARD 2B: Scales + Steps -->
 <div class="card card-2">
   <div class="card-2-col">
-    <div class="tool-title text-scale">Scales</div>
+    <div class="tool-title text-scale">Box Value</div>
 
     <div class="row">
       <svg class="icon-square" viewBox="0 0 20 20" aria-hidden="true">
@@ -101,7 +106,7 @@
         id="scale-input-x"
         class="input-label"
         step="any"
-        placeholder="OX"
+        placeholder="X value"
       >
     </div>
 
@@ -119,13 +124,13 @@
         id="scale-input-y"
         class="input-label"
         step="any"
-        placeholder="OY"
+        placeholder="Y value"
       >
     </div>
   </div>
 
   <div class="card-2-col">
-    <div class="tool-title text-scale">Steps</div>
+    <div class="tool-title text-scale">Spacing</div>
 
     <div class="row">
       <input
@@ -133,7 +138,7 @@
         id="step-input-x"
         class="input-label"
         step="any"
-        placeholder="OX step"
+        placeholder="X step"
       >
     </div>
 
@@ -143,191 +148,588 @@
         id="step-input-y"
         class="input-label"
         step="any"
-        placeholder="OY step"
+        placeholder="Y step"
       >
     </div>
   </div>
 </div>
         
-        <!-- CARD 3: Data Point -->
+<!-- CARD 3: Experimental Points -->
 <div class="card card-3">
-  <div class="row row-between">
-    <span class="tool-title text-datapoint">Data Point</span>
+  <span class="tool-title text-datapoint">Experimental Points P(x,y)</span>
 
-    <input type="number" id="point-input-x" class="input-xy" step="any" placeholder="x">
-    <input type="number" id="point-input-y" class="input-xy" step="any" placeholder="y">
+  <div class="row card-3-controls">
+    <input
+      type="number"
+      id="point-input-x"
+      class="input-xy"
+      step="any"
+      placeholder="x"
+    >
+
+    <input
+      type="number"
+      id="point-input-y"
+      class="input-xy"
+      step="any"
+      placeholder="y"
+    >
 
     <button id="add-point" class="btn-p-plus">+P</button>
     <button id="delete-full-point" class="btn-del-text">Del</button>
   </div>
-</div>
+</div>       
 
-<!-- CARD 4: Line + Extend Line -->
-<div class="card card-4">
-  <div class="row row-between margin-b">
-    <span class="tool-title text-line">Straight Line</span>
+<!-- Cardul 4  Meniu flotant comun pentru TrendLine 1 și 2 -->
+<div class="card floating-tool-card">
+  <div class="floating-tool-row">
+    <span class="floating-tool-title">TrendLines</span>
 
-    <div class="btn-group">
-      <button id="activate-trendline-1" class="btn-start">Start</button>
-      <button id="fix-trendline-1" class="btn-fix" disabled>Fix</button>
-      <button id="reset-trendline-1" class="btn-del-text" disabled>Del</button>
-    </div>
-  </div>
+    <details class="ghost-line" name="tool-menu-group" style="--line-color:#0208cb; --fixed-color:#0008ff;">
+      <summary class="ghost-line-summary" aria-label="TrendLine 1">
+        <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true">
+          <line class="ghost-line-diagonal" x1="7" y1="30" x2="33" y2="10" vector-effect="non-scaling-stroke" />
+          <path class="ghost-line-x" d="M14 14 L26 26 M26 14 L14 26" vector-effect="non-scaling-stroke" />
+        </svg>
+      </summary>
+      <div class="ghost-line-content">
+        <div class="btn-group">
+          <button id="activate-trendline-1" class="btn-start">Draw Line</button>
+          <button id="fix-trendline-1" class="btn-fix" disabled>Fix Line</button>
+          <button id="reset-trendline-1" class="btn-del-text" disabled>Del</button>
+        </div>
+      </div>
+    </details>
 
-  <div class="row row-between">
-    <span class="tool-title text-extend">Extend Line</span>
-
-    <div class="btn-group">
-      <button id="activate-extensions" class="btn-start">Start</button>
-      <button id="fix-extensions" class="btn-fix" disabled>Fix</button>
-      <button id="reset-extensions" class="btn-del-text" disabled>Del</button>
-    </div>
-  </div>
-</div>
-
-<!-- CARD 5: Line 2 + Extend Line 2 -->
-<div class="card card-4">
-  <div class="row row-between margin-b">
-    <span class="tool-title text-line">Straight Line 2</span>
-
-    <div class="btn-group">
-      <button id="activate-trendline-4" class="btn-start">Start</button>
-      <button id="fix-trendline-4" class="btn-fix" disabled>Fix</button>
-      <button id="reset-trendline-4" class="btn-del-text" disabled>Del</button>
-    </div>
-  </div>
-
-  <div class="row row-between">
-    <span class="tool-title text-extend">Extend Line 2</span>
-
-    <div class="btn-group">
-      <button id="activate-extensions-2" class="btn-start">Start</button>
-      <button id="fix-extensions-2" class="btn-fix" disabled>Fix</button>
-      <button id="reset-extensions-2" class="btn-del-text" disabled>Del</button>
-    </div>
+    <details class="ghost-line" name="tool-menu-group" style="--line-color:#00897B; --fixed-color:#029688;">
+      <summary class="ghost-line-summary" aria-label="TrendLine 2">
+        <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true">
+          <line class="ghost-line-diagonal" x1="5" y1="14" x2="35" y2="30" vector-effect="non-scaling-stroke" />
+          <path class="ghost-line-x" d="M14 14 L26 26 M26 14 L14 26" vector-effect="non-scaling-stroke" />
+        </svg>
+      </summary>
+      <div class="ghost-line-content">
+        <div class="btn-group">
+          <button id="activate-trendline-4" class="btn-start">Draw Line</button>
+          <button id="fix-trendline-4" class="btn-fix" disabled>Fix Line</button>
+          <button id="reset-trendline-4" class="btn-del-text" disabled>Del</button>
+        </div>
+      </div>
+    </details>
   </div>
 </div>
-        <!-- CARD 6: Intercepts -->
-        <div class="card card-6">
-          <div class="tool-title text-intercepts">Axis Intercepts</div>
 
-          <div class="row row-between">
+
+<!-- CARDUL 5: EXTEND LINE — meniu flotant comun pentru Line 1 și Line 2 -->
+<div class="card floating-tool-card">
+  <div class="floating-tool-row">
+    <span class="floating-tool-title extendline-title">Extend Lines</span>
+
+<!-- EXTEND LINE 1 -->
+    <details
+      class="ghost-line"
+      name="tool-menu-group"
+      style="--line-color:#0208cb; --fixed-color:#0008ff;"
+    >
+      <summary class="ghost-line-summary" aria-label="Extend Line 1">
+        <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true">
+          <line
+            class="ghost-line-diagonal"
+            x1="7"
+            y1="30"
+            x2="33"
+            y2="10"
+            stroke-dasharray="1 5"
+            vector-effect="non-scaling-stroke"
+          />
+          <path
+            class="ghost-line-x"
+            d="M14 14 L26 26 M26 14 L14 26"
+            vector-effect="non-scaling-stroke"
+          />
+        </svg>
+      </summary>
+
+      <div class="ghost-line-content">
+        <div class="btn-group">
+          <button id="activate-extensions" class="btn-start">
+            Extend
+          </button>
+          <button id="fix-extensions" class="btn-fix" disabled>
+            Fix Extensions
+          </button>
+          <button id="reset-extensions" class="btn-del-text" disabled>
+            Del
+          </button>
+        </div>
+      </div>
+    </details>
+
+<!-- EXTEND LINE 2 -->
+    <details
+      class="ghost-line"
+      name="tool-menu-group"
+      style="--line-color:#00897B; --fixed-color:#029688;"
+    >
+      <summary class="ghost-line-summary" aria-label="Extend Line 2">
+        <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true">
+          <line
+            class="ghost-line-diagonal"
+            x1="5"
+            y1="14"
+            x2="35"
+            y2="30"
+            stroke-dasharray="1 5"
+            vector-effect="non-scaling-stroke"
+          />
+          <path
+            class="ghost-line-x"
+            d="M14 14 L26 26 M26 14 L14 26"
+            vector-effect="non-scaling-stroke"
+          />
+        </svg>
+      </summary>
+
+      <div class="ghost-line-content">
+        <div class="btn-group">
+          <button id="activate-extensions-2" class="btn-start">
+            Extend
+          </button>
+          <button id="fix-extensions-2" class="btn-fix" disabled>
+            Fix Extensions
+          </button>
+          <button id="reset-extensions-2" class="btn-del-text" disabled>
+            Del
+          </button>
+        </div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- CARD 6: AXIS INTERCEPTS — meniuri flotante -->
+<div class="card floating-tool-card">
+  <div class="floating-tool-row">
+    <span class="floating-tool-title">Intercepts</span>
+
+<!-- INTERCEPTS — LINE 1 -->
+    <details
+      class="ghost-line"
+      name="tool-menu-group"
+      style="--line-color:#0208cb; --fixed-color:#0008ff;"
+    >
+      <summary class="ghost-line-summary" aria-label="Axis Intercepts Line 1">
+        <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true">
+          <!-- Desenul complet moștenește animația vechii linii -->
+          <g class="ghost-line-diagonal ghost-intercept-mark">
+
+          <!-- OX -->
+          <line
+            class="ghost-intercept-axis"
+            x1="2"
+            y1="21"
+            x2="38"
+            y2="21"
+          />
+            <polyline
+              class="ghost-intercept-axis"
+              points="35.5,19.5 38,21 35.5,22.5"
+            />
+
+            <!-- OY -->
+            <line
+            class="ghost-intercept-axis"
+            x1="19"
+            y1="38"
+            x2="19"
+            y2="2"
+          />
+          <polyline
+            class="ghost-intercept-axis"
+            points="17.5,4.5 19,2 20.5,4.5"
+          />
+
+          <!-- Line 1 -->
+          <line
+            class="ghost-intercept-diagonal"
+            x1="14"
+            y1="34"
+            x2="37"
+            y2="8"
+          />
+        </g>
+
+        <!-- X-ul rămâne separat -->
+        <path
+          class="ghost-line-x"
+          d="M14 14 L26 26 M26 14 L14 26"
+          vector-effect="non-scaling-stroke"
+        />
+       </svg>
+      </summary>
+
+      <div class="ghost-line-content">
+        <div class="row row-between margin-b">
           <input
-             type="number"
-             id="intersection-x-value"
-             class="input-xy"
-             step="any"
-             placeholder="x"
-             >
-        <button id="add-intersection-x" class="btn-siclam">+X</button>
-        <button id="reset-intersection-x" class="btn-del-text">Del</button>
-
-         <input
-          type="number"
-          id="intersection-y-value"
-          class="input-xy"
-          step="any"
-          placeholder="y"
+            type="number"
+            id="intersection-x-value"
+            class="input-xy input-intercept"
+            step="any"
+            placeholder="x₁"
           >
-    <button id="add-intersection-y" class="btn-siclam">+Y</button>
-    <button id="reset-intersection-y" class="btn-del-text">Del</button>
-  </div>
-<div class="row row-between">
-  <input
-    type="number"
-    id="intersection-x-value-2"
-    class="input-xy"
-    step="any"
-    placeholder="x₂"
-  >
-  <button id="add-intersection-x-2" class="btn-siclam">+X₂</button>
-  <button id="reset-intersection-x-2" class="btn-del-text">Del</button>
-
-  <input
-    type="number"
-    id="intersection-y-value-2"
-    class="input-xy"
-    step="any"
-    placeholder="y₂"
-  >
-  <button id="add-intersection-y-2" class="btn-siclam">+Y₂</button>
-  <button id="reset-intersection-y-2" class="btn-del-text">Del</button>
- </div>
-
-</div>
-
-        <!-- CARD 5: Slope Points -->
-        <div class="card card-5">
-            <div class="tool-title text-slope">Slope Points</div>
-            <div class="row row-between margin-b">
-            <span class="tool-title text-slope">P₁</span>
-
-            <input
-              type="number"
-              id="slope-p1-x"
-              class="input-xy"
-              step="any"
-              placeholder="x"
-            >
-
-            <input
-              type="number"
-              id="slope-p1-y"
-              class="input-xy"
-              step="any"
-              placeholder="y"
-            >
-
-            <button id="add-slope-p1" class="btn-orange">+P₁</button>
-            <button id="reset-slope-p1" class="btn-del-text">Del</button>
-          </div>
-
-          <div class="row row-between">
-            <span class="tool-title text-slope">P₂</span>
-
-            <input
-              type="number"
-              id="slope-p2-x"
-              class="input-xy"
-              step="any"
-              placeholder="x"
-            >
-
-            <input
-              type="number"
-              id="slope-p2-y"
-              class="input-xy"
-              step="any"
-              placeholder="y"
-            >
-
-            <button id="add-slope-p2" class="btn-orange">+P₂</button>
-            <button id="reset-slope-p2" class="btn-del-text">Del</button>
-          </div>
+          <button id="add-intersection-x" class="btn-try">
+          Try x-intercept
+          </button>
+          <button id="reset-intersection-x" class="btn-del-text">Del</button>
         </div>
 
-   <!-- CARD 7: CurveLine -->
-<div class="card card-7">
-  <div class="row row-between">
-    <span class="tool-title text-curveline">Curve Line</span>
+        <div class="row row-between">
+          <input
+            type="number"
+            id="intersection-y-value"
+            class="input-xy input-intercept"
+            step="any"
+            placeholder="y₁"
+          >
+          <button id="add-intersection-y" class="btn-try">
+          Try y-intercept
+          </button>
+          <button id="reset-intersection-y" class="btn-del-text">Del</button>
+        </div>
+      </div>
+    </details>
 
-    <div class="btn-group">
-      <button id="activate-curveline" class="btn-curve">Start</button>
-      <button id="fix-curveline" class="btn-curve-fix" disabled>Fix</button>
-      <button id="reset-curveline" class="btn-del-text" disabled>Del</button>
-    </div>
+<!-- INTERCEPTS — LINE 2 -->
+    <details
+      class="ghost-line"
+      name="tool-menu-group"
+      style="--line-color:#00897B; --fixed-color:#029688;"
+    >
+      <summary class="ghost-line-summary" aria-label="Axis Intercepts Line 2">
+
+        <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true">
+          <!-- Desenul complet moștenește animația vechii linii -->
+          <g class="ghost-line-diagonal ghost-intercept-mark">
+
+            <!-- OX -->
+            <line
+              class="ghost-intercept-axis"
+              x1="2"
+              y1="21"
+              x2="38"
+              y2="21"
+            />
+            <polyline
+              class="ghost-intercept-axis"
+              points="35.5,19.5 38,21 35.5,22.5"
+            />
+
+            <!-- OY -->
+            <line
+              class="ghost-intercept-axis"
+              x1="19"
+              y1="38"
+              x2="19"
+              y2="2"
+            />
+            <polyline
+              class="ghost-intercept-axis"
+              points="17.5,4.5 19,2 20.5,4.5"
+            />
+
+            <!-- Line 2 -->
+            <line
+              class="ghost-intercept-diagonal"
+              x1="6"
+              y1="10"
+              x2="34"
+              y2="25"
+            />
+          </g>
+
+          <!-- X-ul rămâne separat -->
+          <path
+            class="ghost-line-x"
+            d="M14 14 L26 26 M26 14 L14 26"
+            vector-effect="non-scaling-stroke"
+          />
+        </svg>
+      </summary>
+
+      <div class="ghost-line-content">
+        <div class="row row-between margin-b">
+          <input
+            type="number"
+            id="intersection-x-value-2"
+            class="input-xy input-intercept"
+            step="any"
+            placeholder="x₂"
+          >
+          <button id="add-intersection-x-2" class="btn-try">
+          Try x-intercept
+          </button>
+          <button id="reset-intersection-x-2" class="btn-del-text">Del</button>
+        </div>
+
+        <div class="row row-between">
+          <input
+            type="number"
+            id="intersection-y-value-2"
+            class="input-xy input-intercept"
+            step="any"
+            placeholder="y₂"
+          >
+          <button id="add-intersection-y-2" class="btn-try">
+          Try y-intercept
+          </button>
+          <button id="reset-intersection-y-2" class="btn-del-text">Del</button>
+        </div>
+      </div>
+    </details>
+  </div>
+</div>
+        
+<!-- CARD 7: Slope Points — meniu flotant -->
+<div class="card card-5 floating-tool-card">
+  <div class="floating-tool-row">
+    <span class="floating-tool-title text-slope">Slope Points</span>
+
+    <details
+      class="ghost-line"
+      name="tool-menu-group"
+      style="--line-color:#0208cb; --fixed-color:#0008ff;"
+    >
+      <summary class="ghost-line-summary" aria-label="Slope Points">
+        <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true">
+
+          <!-- Desenul care dispare ca fumul -->
+          <g class="ghost-line-diagonal ghost-slope-mark">
+
+            <!-- Dreapta albastră -->
+            <line
+              class="ghost-slope-line"
+              x1="5"
+              y1="31"
+              x2="35"
+              y2="9"
+            />
+
+            <!-- Diferențele Δx și Δy -->
+            <polyline
+              class="ghost-slope-guide"
+              points="10,27.3 30,27.3 30,12.7"
+            />
+
+            <!-- Cele două puncte -->
+            <circle class="ghost-slope-point" cx="10" cy="27.3" r="1.8" />
+            <circle class="ghost-slope-point" cx="30" cy="12.7" r="1.8" />
+          </g>
+
+          <!-- × folosit când meniul este deschis -->
+          <path
+            class="ghost-line-x"
+            d="M14 14 L26 26 M26 14 L14 26"
+            vector-effect="non-scaling-stroke"
+          />
+        </svg>
+      </summary>
+
+      <div class="ghost-line-content">
+        <div class="row row-between margin-b">
+          <input
+            type="number"
+            id="slope-p1-x"
+            class="input-xy"
+            step="any"
+            placeholder="x₁"
+          >
+
+          <input
+            type="number"
+            id="slope-p1-y"
+            class="input-xy"
+            step="any"
+            placeholder="y₁"
+          >
+
+          <button id="add-slope-p1" class="btn-try">
+            + P₁ ( , )
+          </button>
+
+          <button id="reset-slope-p1" class="btn-del-text">Del</button>
+        </div>
+
+        <div class="row row-between">
+          <input
+            type="number"
+            id="slope-p2-x"
+            class="input-xy"
+            step="any"
+            placeholder="x₂"
+          >
+
+          <input
+            type="number"
+            id="slope-p2-y"
+            class="input-xy"
+            step="any"
+            placeholder="y₂"
+          >
+
+          <button id="add-slope-p2" class="btn-try">
+            + P₂ ( , )
+          </button>
+
+          <button id="reset-slope-p2" class="btn-del-text">Del</button>
+        </div>
+      </div>
+    </details>
+
+    <details
+      class="ghost-line"
+      name="tool-menu-group"
+      style="--line-color:#00897B; --fixed-color:#029688;"
+    >
+      <summary class="ghost-line-summary" aria-label="Slope Points Line 2">
+          <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true">
+
+            <!-- Desenul pantei negative pt dreapta verde-->
+            <g class="ghost-line-diagonal ghost-slope-mark">
+              <line
+                class="ghost-slope-line"
+                x1="5"
+                y1="9"
+                x2="35"
+                y2="31"
+              />
+
+              <polyline
+                class="ghost-slope-guide"
+                points="10,12.7 10,27.3 30,27.3"
+              />
+
+              <circle class="ghost-slope-point" cx="10" cy="12.7" r="1.6" />
+              <circle class="ghost-slope-point" cx="30" cy="27.3" r="1.6" />
+            </g>
+
+            <path
+              class="ghost-line-x"
+              d="M14 14 L26 26 M26 14 L14 26"
+              vector-effect="non-scaling-stroke"
+            />
+          </svg>
+        </summary>
+
+        <div class="ghost-line-content">
+          <div class="row row-between margin-b">
+            <input
+              type="number"
+              id="slope-s1-x"
+              class="input-xy"
+              step="any"
+              placeholder="x₁"
+            >
+
+            <input
+              type="number"
+              id="slope-s1-y"
+              class="input-xy"
+              step="any"
+              placeholder="y₁"
+            >
+
+            <button id="add-slope-s1" class="btn-try">+S₁( , )</button>
+            <button id="reset-slope-s1" class="btn-del-text">Del</button>
+        </div>
+
+        <div class="row row-between">
+          <input
+            type="number"
+            id="slope-s2-x"
+            class="input-xy"
+            step="any"
+            placeholder="x₂"
+          >
+
+          <input
+            type="number"
+            id="slope-s2-y"
+            class="input-xy"
+            step="any"
+            placeholder="y₂"
+          >
+
+          <button id="add-slope-s2" class="btn-try">+S₂( , )</button>
+          <button id="reset-slope-s2" class="btn-del-text">Del</button>
+       </div>
+     </div>
+   </details>
+  </div>
+</div>       
+
+<!-- CARD 9: Curve Line — meniu flotant -->
+<div class="card card-7 floating-tool-card">
+  <div class="floating-tool-row">
+    <span class="floating-tool-title text-curveline">Curve Line</span>
+
+    <details
+      class="ghost-line"
+      name="tool-menu-group"
+      style="--line-color:#AD1457; --fixed-color:#C2185B;"
+    >
+      <summary class="ghost-line-summary" aria-label="Curve Line">
+        <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true">
+
+          <!-- Curba care preia hoverul și animația de fum -->
+          <path
+            class="ghost-line-diagonal ghost-curve-path"
+            d="M5 29 C10 8, 17 8, 20 20 S30 32, 35 10"
+            fill="none"
+            vector-effect="non-scaling-stroke"
+          />
+
+          <!-- × afișat când meniul este deschis -->
+          <path
+            class="ghost-line-x"
+            d="M14 14 L26 26 M26 14 L14 26"
+            vector-effect="non-scaling-stroke"
+          />
+        </svg>
+      </summary>
+
+      <div class="ghost-line-content">
+        <div class="btn-group">
+          <button id="activate-curveline" class="btn-curve">
+            Draw Curve
+          </button>
+
+          <button id="fix-curveline" class="btn-curve-fix" disabled>
+            Fix Curve
+          </button>
+
+          <button id="reset-curveline" class="btn-del-text" disabled>
+            Del
+          </button>
+        </div>
+      </div>
+    </details>
   </div>
 </div>
 
 
-        <!-- CARD 9: Graph preview -->
-    <button id="preview-graph" class="btn-preview-graph">PREVIEW GRAPH</button>
+        <!-- CARD 10: Graph preview -->
+       <button id="preview-graph" class="btn-preview-graph">
+          <span class="preview-title">Preview Graph</span>
+          <span class="preview-note">
+            View your A4 graph layout
+          </span>
+        </button>
 
       </div>
     </div>
 
     <button id="exit-preview" type="button">
-      BACK TO EDITING
+      Keep Building
     </button>
 
   </div>
