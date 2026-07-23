@@ -1,4 +1,4 @@
-  // AxioGraph — app.js
+ // AxioGraph — app.js
 
 import {
   x0,
@@ -57,6 +57,8 @@ let slopePointsData2 = [];
 let intersectionPointsData1 = { x: null, y: null };
 let intersectionPointsData2 = { x: null, y: null };
 let hasUnsavedChanges = false;
+
+let magnifierActive = false;
 
 const trendlineStates = {
   1: { isVisible: false, isFixed: false, p1: null, p2: null, dragMode: null, pointerId: null, lastPoint: null },
@@ -2007,15 +2009,58 @@ function setupPointerEvents() {
 }
 
 function setupDirtyEvents() {
+  /* Detectează scrierea în inputuri */
   $('controls').addEventListener('input', (e) => {
     if (e.target.id === 'load-work-input') return;
     markDirty();
   }, true);
 
+  /* Detectează apăsarea butoanelor */
   $('controls').addEventListener('click', (e) => {
-    if (['save-work', 'load-work-btn'].includes(e.target.id)) return;
+    const button = e.target.closest('button');
+
+    if (
+      [
+        'save-work',
+        'load-work-btn',
+        'activate-magnifier',
+        'deactivate-magnifier'
+      ].includes(button?.id)
+    ) {
+      return;
+    }
+
     markDirty();
   }, true);
+}
+
+// Funcția pt starea de magnifier și off
+function setupMagnifierControls() {
+  const activateButton = $('activate-magnifier');
+  const deactivateButton = $('deactivate-magnifier');
+  const magnifierTip = $('magnifier-tip');
+
+  function setMagnifierActive(isActive) {
+    magnifierActive = isActive;
+
+    activateButton.setAttribute(
+      'aria-pressed',
+      isActive ? 'true' : 'false'
+    );
+
+    deactivateButton.disabled = !isActive;
+    magnifierTip.hidden = !isActive;
+  }
+
+  activateButton.addEventListener('click', () => {
+    setMagnifierActive(true);
+  });
+
+  deactivateButton.addEventListener('click', () => {
+    setMagnifierActive(false);
+  });
+
+  setMagnifierActive(false);
 }
 
 function init() {
@@ -2051,8 +2096,11 @@ function init() {
   setupInputEvents();
   setupPointerEvents();
   setupDirtyEvents();
+  setupMagnifierControls();
 
   markSaved();
 }
 
 window.addEventListener('load', init);
+
+  
