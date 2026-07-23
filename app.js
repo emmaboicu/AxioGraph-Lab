@@ -62,9 +62,8 @@ let intersectionPointsData2 = { x: null, y: null };
 let hasUnsavedChanges = false;
 
 let magnifierActive = false;
-/* Zona reală din grafic pe care o vede lupa */
-const MAGNIFIER_SOURCE_LONG = 24;
-const MAGNIFIER_SOURCE_SHORT = 13;
+/* Coeficient explicit: 1 pătrățel din graf va apărea de MAGNIFIER_ZOOM ori mai mare în lupă. */
+const MAGNIFIER_ZOOM = 3.4;
 const MAGNIFIER_TEXT_SIZE = 1.15;
 const MAGNIFIER_TICK_LABEL_COLOR = '#1449b3';
 
@@ -447,11 +446,21 @@ function renderMagnifierAxisValues(group, axis, mapPoint, normalScale) {
   appendSpecialMagnifierTicks(group, axis, mapPoint, normalScale);
 }
 
+function getMagnifierSourceSize() {
+  const normalScale = getNormalSvgPixelScale();
+  const zoomedUnit = normalScale * MAGNIFIER_ZOOM;
+
+  return {
+    width: magnifierLens.offsetWidth / zoomedUnit,
+    height: magnifierLens.offsetHeight / zoomedUnit
+  };
+}
+
 function renderMagnifierContent(axis, sourceMinX, sourceMinY, sourceWidth, sourceHeight) {
   const lensWidth = magnifierLens.offsetWidth;
   const lensHeight = magnifierLens.offsetHeight;
-  const magnifierScale = Math.min(lensWidth / sourceWidth, lensHeight / sourceHeight);
   const normalScale = getNormalSvgPixelScale();
+  const magnifierScale = normalScale * MAGNIFIER_ZOOM;
   const contentWidth = sourceWidth * magnifierScale;
   const contentHeight = sourceHeight * magnifierScale;
   const offsetX = (lensWidth - contentWidth) / 2;
@@ -2228,54 +2237,45 @@ function svgPointToContainer(x, y) {
 
 /* Afișează lupa pentru axa și poziția selectată */
 function showMagnifierAt(axis, svgX, svgY) {
-  const longHalf = MAGNIFIER_SOURCE_LONG / 2;
-  const shortHalf = MAGNIFIER_SOURCE_SHORT / 2;
+  /* Alegem forma înainte de calcul, pentru că dimensiunea ferestrei depinde de axă. */
+  magnifierLens.classList.toggle('is-x', axis === 'x');
+  magnifierLens.classList.toggle('is-y', axis === 'y');
+
+  /* Trebuie afișată înainte să-i putem măsura dimensiunea. */
+  magnifierLens.hidden = false;
+  magnifierLens.setAttribute('aria-hidden', 'false');
+
+  const sourceSize = getMagnifierSourceSize();
+  const halfWidth = sourceSize.width / 2;
+  const halfHeight = sourceSize.height / 2;
 
   let centerX;
   let centerY;
-  let sourceMinX;
-  let sourceMinY;
-  let sourceWidth;
-  let sourceHeight;
 
   if (axis === 'x') {
-    /* Pe OX se modifică numai poziția stânga-dreapta */
+    /* Pe OX se modifică numai poziția stânga-dreapta. */
     centerX = clamp(
       svgX,
-      x0 + longHalf,
-      x0 + gridWidth - longHalf
+      x0 + halfWidth,
+      x0 + gridWidth - halfWidth
     );
 
     centerY = y0;
-
-    sourceMinX = centerX - longHalf;
-    sourceMinY = centerY - shortHalf;
-    sourceWidth = MAGNIFIER_SOURCE_LONG;
-    sourceHeight = MAGNIFIER_SOURCE_SHORT;
   } else {
-    /* Pe OY se modifică numai poziția sus-jos */
+    /* Pe OY se modifică numai poziția sus-jos. */
     centerX = originX;
 
     centerY = clamp(
       svgY,
-      y0 - gridHeight + longHalf,
-      y0 - longHalf
+      y0 - gridHeight + halfHeight,
+      y0 - halfHeight
     );
-
-    sourceMinX = centerX - shortHalf;
-    sourceMinY = centerY - longHalf;
-    sourceWidth = MAGNIFIER_SOURCE_SHORT;
-    sourceHeight = MAGNIFIER_SOURCE_LONG;
   }
 
-  /* Alegem forma orizontală sau verticală */
-  magnifierLens.classList.toggle('is-x', axis === 'x');
-  magnifierLens.classList.toggle('is-y', axis === 'y');
+  const sourceMinX = centerX - halfWidth;
+  const sourceMinY = centerY - halfHeight;
 
-  /* Trebuie afișată înainte să-i putem măsura dimensiunea */
-  magnifierLens.hidden = false;
-  magnifierLens.setAttribute('aria-hidden', 'false');
-  renderMagnifierContent(axis, sourceMinX, sourceMinY, sourceWidth, sourceHeight);
+  renderMagnifierContent(axis, sourceMinX, sourceMinY, sourceSize.width, sourceSize.height);
 
   const containerRect = $('a4-container').getBoundingClientRect();
   const lensWidth = magnifierLens.offsetWidth;
