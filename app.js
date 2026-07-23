@@ -1,4 +1,4 @@
- // AxioGraph — app.js
+// AxioGraph — app.js
 
 import {
   x0,
@@ -59,6 +59,15 @@ let intersectionPointsData2 = { x: null, y: null };
 let hasUnsavedChanges = false;
 
 let magnifierActive = false;
+/* Zona reală din grafic pe care o vede lupa */
+const MAGNIFIER_SOURCE_LONG = 18;
+const MAGNIFIER_SOURCE_SHORT = 12;
+
+/* Elementele lupei — vor fi găsite în init */
+let magnifierSensorsGroup;
+let magnifierLens;
+let magnifierSvg;
+let magnifierExtraLabels;
 
 const trendlineStates = {
   1: { isVisible: false, isFixed: false, p1: null, p2: null, dragMode: null, pointerId: null, lastPoint: null },
@@ -190,28 +199,39 @@ function addAxisMarker(group, axis, coord, label, color, pointX = null) {
     text.setAttribute('y', coord + 1.2);
     text.setAttribute('text-anchor', labelOnRight ? 'start' : 'end');
   }
-  text.setAttribute('data-axis', axis);
-  tick.setAttribute('stroke', color);
-  tick.setAttribute('stroke-width', 0.45);
+    text.setAttribute('data-axis', axis);
+    tick.setAttribute('stroke', color);
+    tick.setAttribute('stroke-width', 0.45);
 
-  if (hasSpecialTextNear(axis, coord)) {
-  group.appendChild(tick);
-  return;
+
+    text.textContent = label;
+    text.setAttribute('font-size', '3.4');
+    text.setAttribute('font-family', 'Poppins, Arial, sans-serif');
+    text.setAttribute('font-weight', '700');
+    text.setAttribute('fill', color);
+    text.setAttribute('stroke', '#ffffff');
+    text.setAttribute('stroke-width', '0.35');
+    text.setAttribute('paint-order', 'stroke');
+    text.setAttribute('pointer-events', 'none');
+
+      
+      /*  Dacă eticheta este prea apropiată pentru graficul normal,
+          păstrăm tickul pe grafic și mutăm textul numai în lupă.*/
+        
+      if (hasSpecialTextNear(axis, coord)) {
+          group.appendChild(tick);
+
+      if (magnifierExtraLabels) {
+            magnifierExtraLabels.appendChild(text);
+          }
+
+      return;
   }
-
-  text.textContent = label;
-  text.setAttribute('font-size', '3.4');
-  text.setAttribute('font-family', 'Poppins, Arial, sans-serif');
-  text.setAttribute('font-weight', '700');
-  text.setAttribute('fill', color);
-  text.setAttribute('stroke', '#ffffff');
-  text.setAttribute('stroke-width', '0.35');
-  text.setAttribute('paint-order', 'stroke');
-  text.setAttribute('pointer-events', 'none');
 
   group.appendChild(tick);
   group.appendChild(text);
 }
+
 // funcția care șterge inputurile de labels daca se scrie o valoare specială
 function hasSpecialAxisMarker(axis, value) {
   const same = (a, b) => Math.abs(Number(a) - Number(b)) < 1e-6;
@@ -267,6 +287,7 @@ function refreshTicks() {
     text.setAttribute('font-weight', '700');
     text.setAttribute('fill', '#1449b3');
     text.setAttribute('pointer-events', 'none');
+
     return text;
   }
 
@@ -292,87 +313,7 @@ function refreshTicks() {
     return false;
   }
 
-  function getSvgPointFromEvent(evt) {
-    const pt = svg.createSVGPoint();
-    pt.x = evt.clientX;
-    pt.y = evt.clientY;
-    return pt.matrixTransform(svg.getScreenCTM().inverse());
-  }
 
-  function valuesNearCursor(items, cursorCoord, radius = 10, axis = 'x') {
-  const nearby = items
-    .filter((item) => Math.abs(item.coord - cursorCoord) <= radius)
-    .sort((a, b) => Math.abs(a.coord - cursorCoord) - Math.abs(b.coord - cursorCoord))
-    .slice(0, 3)
-    .sort((a, b) => a.coord - b.coord);
-
-  if (axis === 'y') nearby.reverse();
-
-  return nearby.map((item) => item.val).join(' | ');
-}
-
-  function addAxisHoverSensor(axis, items) {
-    if (!items.length) return;
-
-    const sensor = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    let hoverText = null;
-
-    if (axis === 'x') {
-      sensor.setAttribute('x', x0);
-      sensor.setAttribute('y', y0);
-      sensor.setAttribute('width', gridWidth);
-      sensor.setAttribute('height', 18);
-    } else {
-      sensor.setAttribute('x', originX - 18);
-      sensor.setAttribute('y', y0 - gridHeight);
-      sensor.setAttribute('width', 18);
-      sensor.setAttribute('height', gridHeight);
-    }
-
-    sensor.setAttribute('fill', 'transparent');
-    sensor.setAttribute('pointer-events', 'all');
-
-    sensor.addEventListener('mousemove', (evt) => {
-      const point = getSvgPointFromEvent(evt);
-      const cursorCoord = axis === 'x' ? point.x : point.y;
-      const label = valuesNearCursor(items, cursorCoord, 10, axis);
-
-      if (!label) {
-        if (hoverText) {
-          hoverText.remove();
-          hoverText = null;
-        }
-        return;
-      }
-
-      if (hoverText) hoverText.remove();
-
-      if (axis === 'x') {
-        hoverText = makeSvgText(label, point.x, y0 - 1, 'middle', 5);
-
-      } else {
-        hoverText = makeSvgText(label, originX + 1.8, point.y + 1.8, 'start', 5);
-
-
-      }
-
-      hoverText.setAttribute('fill', '#002b80');
-      hoverText.setAttribute('stroke', '#ffffff');
-      hoverText.setAttribute('stroke-width', '0.35');
-      hoverText.setAttribute('paint-order', 'stroke');
-
-      tickMarksGroup.appendChild(hoverText);
-    });
-
-    sensor.addEventListener('mouseleave', () => {
-      if (hoverText) {
-        hoverText.remove();
-        hoverText = null;
-      }
-    });
-
-    tickMarksGroup.appendChild(sensor);
-  }
 
   let xItems = [];
   let yItems = [];
@@ -417,7 +358,6 @@ function refreshTicks() {
       }
     });
 
-    addAxisHoverSensor('x', xItems);
   }
 
   if (!isNaN(scaleValY) && scaleValY !== 0) {
@@ -459,7 +399,6 @@ function refreshTicks() {
       }
     });
 
-    addAxisHoverSensor('y', yItems);
   }
 }
 function refreshScaleStepLabels() {
@@ -841,6 +780,9 @@ function redrawAllSpecialPoints() {
   experimentalPointsGroup.innerHTML = '';
   slopePointsGroup.innerHTML = '';
   intersectionPointsGroup.innerHTML = '';
+  if (magnifierExtraLabels) {
+  magnifierExtraLabels.innerHTML = '';
+  }
 
   redrawIntersectionPoints();// prioritate 1
   redrawExperimentalPoints();// prioritate 2
@@ -2034,6 +1976,204 @@ function setupDirtyEvents() {
   }, true);
 }
 
+/* Ascunde fereastra lupei */
+function hideMagnifierLens() {
+  if (!magnifierLens) return;
+
+  magnifierLens.hidden = true;
+  magnifierLens.setAttribute('aria-hidden', 'true');
+}
+
+/* Transformă o poziție SVG într-o poziție din a4-container */
+function svgPointToContainer(x, y) {
+  const point = svg.createSVGPoint();
+  point.x = x;
+  point.y = y;
+
+  const screenPoint = point.matrixTransform(svg.getScreenCTM());
+  const containerRect = $('a4-container').getBoundingClientRect();
+
+  return {
+    x: screenPoint.x - containerRect.left,
+    y: screenPoint.y - containerRect.top
+  };
+}
+
+/* Afișează lupa pentru axa și poziția selectată */
+function showMagnifierAt(axis, svgX, svgY) {
+  const longHalf = MAGNIFIER_SOURCE_LONG / 2;
+  const shortHalf = MAGNIFIER_SOURCE_SHORT / 2;
+
+  let centerX;
+  let centerY;
+
+  if (axis === 'x') {
+    /* Pe OX se modifică numai poziția stânga-dreapta */
+    centerX = clamp(
+      svgX,
+      x0 + longHalf,
+      x0 + gridWidth - longHalf
+    );
+
+    centerY = y0;
+
+    magnifierSvg.setAttribute(
+      'viewBox',
+      [
+        centerX - longHalf,
+        centerY - shortHalf,
+        MAGNIFIER_SOURCE_LONG,
+        MAGNIFIER_SOURCE_SHORT
+      ].join(' ')
+    );
+  } else {
+    /* Pe OY se modifică numai poziția sus-jos */
+    centerX = originX;
+
+    centerY = clamp(
+      svgY,
+      y0 - gridHeight + longHalf,
+      y0 - longHalf
+    );
+
+    magnifierSvg.setAttribute(
+      'viewBox',
+      [
+        centerX - shortHalf,
+        centerY - longHalf,
+        MAGNIFIER_SOURCE_SHORT,
+        MAGNIFIER_SOURCE_LONG
+      ].join(' ')
+    );
+  }
+
+  /* Alegem forma orizontală sau verticală */
+  magnifierLens.classList.toggle('is-x', axis === 'x');
+  magnifierLens.classList.toggle('is-y', axis === 'y');
+
+  /* Trebuie afișată înainte să-i putem măsura dimensiunea */
+  magnifierLens.hidden = false;
+  magnifierLens.setAttribute('aria-hidden', 'false');
+
+  const containerRect = $('a4-container').getBoundingClientRect();
+  const lensWidth = magnifierLens.offsetWidth;
+  const lensHeight = magnifierLens.offsetHeight;
+
+  let left;
+  let top;
+
+  if (axis === 'x') {
+    /*
+      Lupa OX este centrată pe valoarea apăsată.
+      Partea de jos nu trece sub zona actuală a etichetelor.
+    */
+    const anchor = svgPointToContainer(centerX, y0 + 7);
+
+    left = clamp(
+      anchor.x - lensWidth / 2,
+      0,
+      containerRect.width - lensWidth
+    );
+
+    top = clamp(
+      anchor.y - lensHeight,
+      0,
+      containerRect.height - lensHeight
+    );
+  } else {
+    /*
+      Lupa OY apare în dreapta axei și este centrată
+      vertical pe valoarea apăsată.
+    */
+    const anchor = svgPointToContainer(originX, centerY);
+
+    left = clamp(
+      anchor.x + 8,
+      0,
+      containerRect.width - lensWidth
+    );
+
+    top = clamp(
+      anchor.y - lensHeight / 2,
+      0,
+      containerRect.height - lensHeight
+    );
+  }
+
+  magnifierLens.style.left = left + 'px';
+  magnifierLens.style.top = top + 'px';
+}
+
+/* Creează zonele largi de click/tap din jurul axelor */
+function setupMagnifierEngine() {
+  magnifierSensorsGroup = $('magnifier-sensors');
+  magnifierLens = $('magnifier-lens');
+  magnifierSvg = $('magnifier-svg');
+  magnifierExtraLabels = $('magnifier-extra-labels');
+
+  magnifierSensorsGroup.innerHTML = '';
+
+  function createAxisSensor(axis) {
+    const sensor = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'rect'
+    );
+
+    if (axis === 'x') {
+      /* Bandă lată în jurul axei OX */
+      sensor.setAttribute('x', x0);
+      sensor.setAttribute('y', y0 - 8);
+      sensor.setAttribute('width', gridWidth);
+      sensor.setAttribute('height', 18);
+    } else {
+      /* Bandă lată în jurul axei OY */
+      sensor.setAttribute('x', originX - 9);
+      sensor.setAttribute('y', y0 - gridHeight);
+      sensor.setAttribute('width', 18);
+      sensor.setAttribute('height', gridHeight);
+    }
+
+    sensor.setAttribute('fill', 'transparent');
+    sensor.setAttribute('pointer-events', 'all');
+    sensor.style.cursor = 'zoom-in';
+
+    /*
+      Oprim evenimentele înainte să ajungă la instrumentele
+      care desenează sau mută liniile pe grafic.
+    */
+    sensor.addEventListener('pointerdown', (event) => {
+      event.stopPropagation();
+    });
+
+    sensor.addEventListener('pointerup', (event) => {
+      event.stopPropagation();
+    });
+
+    sensor.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!magnifierActive) return;
+
+      const point = getSvgPoint(event);
+
+      showMagnifierAt(axis, point.x, point.y);
+
+      /* Instrucțiunea nu mai este necesară după primul click valid */
+      $('magnifier-tip').hidden = true;
+    });
+
+    magnifierSensorsGroup.appendChild(sensor);
+  }
+
+  createAxisSensor('x');
+  createAxisSensor('y');
+
+  /* La pornirea aplicației, senzorii nu interceptează nimic */
+  magnifierSensorsGroup.setAttribute('pointer-events', 'none');
+  hideMagnifierLens();
+}
+
 // Funcția pt starea de magnifier și off
 function setupMagnifierControls() {
   const activateButton = $('activate-magnifier');
@@ -2050,6 +2190,15 @@ function setupMagnifierControls() {
 
     deactivateButton.disabled = !isActive;
     magnifierTip.hidden = !isActive;
+
+    magnifierSensorsGroup.setAttribute(
+        'pointer-events',
+        isActive ? 'all' : 'none'
+      );
+
+      if (!isActive) {
+        hideMagnifierLens();
+      }
   }
 
   activateButton.addEventListener('click', () => {
@@ -2096,11 +2245,11 @@ function init() {
   setupInputEvents();
   setupPointerEvents();
   setupDirtyEvents();
+
+  setupMagnifierEngine();
   setupMagnifierControls();
 
   markSaved();
 }
 
 window.addEventListener('load', init);
-
-  
