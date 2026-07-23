@@ -1,4 +1,4 @@
- // AxioGraph — app.js
+  // AxioGraph — app.js
 
 import {
   x0,
@@ -53,6 +53,7 @@ let mappedX = {};
 let mappedY = {};
 let experimentalPointsData = [];
 let slopePointsData = [];
+let slopePointsData2 = [];
 let intersectionPointsData1 = { x: null, y: null };
 let intersectionPointsData2 = { x: null, y: null };
 let hasUnsavedChanges = false;
@@ -140,6 +141,7 @@ function addTickY(value) {
 function isTickXInUse(value) {
   return experimentalPointsData.some(pt => pt.x === value) ||
     slopePointsData.some(pt => pt && pt.x === value) ||
+    slopePointsData2.some(pt => pt && pt.x === value) ||
     intersectionPointsData1.x === value ||
     intersectionPointsData2.x === value;
 }
@@ -147,6 +149,7 @@ function isTickXInUse(value) {
 function isTickYInUse(value) {
   return experimentalPointsData.some(pt => pt.y === value) ||
     slopePointsData.some(pt => pt && pt.y === value) ||
+    slopePointsData2.some(pt => pt && pt.y === value) ||
     intersectionPointsData1.y === value ||
     intersectionPointsData2.y === value;
 }
@@ -171,7 +174,7 @@ function addAxisMarker(group, axis, coord, label, color, pointX = null) {
     tick.setAttribute('y2', y0 + 1.5);
 
     text.setAttribute('x', coord);
-    text.setAttribute('y', y0 + 7);
+    text.setAttribute('y', y0 + 5);
     text.setAttribute('text-anchor', 'middle');
   } else {
     tick.setAttribute('x1', originX - 1.5);
@@ -213,6 +216,7 @@ function hasSpecialAxisMarker(axis, value) {
 
   if (experimentalPointsData.some(pt => axis === 'x' ? same(pt.x, value) : same(pt.y, value))) return true;
   if (slopePointsData.some(pt => pt && (axis === 'x' ? same(pt.x, value) : same(pt.y, value)))) return true;
+  if (slopePointsData2.some(pt => pt && (axis === 'x' ? same(pt.x, value) : same(pt.y, value)))) return true;
 
   if (axis === 'x' && intersectionPointsData1.x !== null && same(intersectionPointsData1.x, value)) return true;
   if (axis === 'y' && intersectionPointsData1.y !== null && same(intersectionPointsData1.y, value)) return true;
@@ -342,10 +346,12 @@ function refreshTicks() {
       if (hoverText) hoverText.remove();
 
       if (axis === 'x') {
-        hoverText = makeSvgText(label, point.x, y0 + 15, 'middle', 6);
+        hoverText = makeSvgText(label, point.x, y0 - 1, 'middle', 5);
+
       } else {
-        hoverText = makeSvgText(label, originX - 11, point.y + 1.8, 'end', 6);
-        hoverText.setAttribute('transform', `rotate(-90 ${originX - 11} ${point.y + 1.8})`);
+        hoverText = makeSvgText(label, originX + 1.8, point.y + 1.8, 'start', 5);
+
+
       }
 
       hoverText.setAttribute('fill', '#002b80');
@@ -479,9 +485,9 @@ function refreshScaleStepLabels() {
 
       const mark = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       mark.setAttribute('x1', x);
-      mark.setAttribute('y1', y0);
+      mark.setAttribute('y1', y0 - 1.5);
       mark.setAttribute('x2', x);
-      mark.setAttribute('y2', y0 + 2.5);
+      mark.setAttribute('y2', y0 + 1.5);
       mark.setAttribute('stroke', '#146f9c');
       mark.setAttribute('stroke-width', 0.25);
       scaleStepMarksGroup.appendChild(mark);
@@ -508,9 +514,9 @@ function refreshScaleStepLabels() {
       const y = y0 - (value / scaleY) * 10;
 
       const mark = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      mark.setAttribute('x1', originX);
+      mark.setAttribute('x1', originX - 1.5);
       mark.setAttribute('y1', y);
-      mark.setAttribute('x2', originX - 2.5);
+      mark.setAttribute('x2', originX + 1.5);
       mark.setAttribute('y2', y);
       mark.setAttribute('stroke', '#146f9c');
       mark.setAttribute('stroke-width', 0.25);
@@ -587,6 +593,18 @@ function redrawExperimentalPoints() {
 }
 
 function addDataPoint() {
+  const button = $('add-point');
+
+  button.classList.remove('is-popping');
+  button.addEventListener(
+  'animationend',
+  () => button.classList.remove('is-popping'),
+  { once: true }
+  );
+
+  void button.offsetWidth;
+  button.classList.add('is-popping');
+  
   const inputX = $('point-input-x');
   const inputY = $('point-input-y');
 
@@ -725,32 +743,40 @@ function redrawSlopePoints() {
   slopePointsGroup.innerHTML = '';
   if (slopePointsData[0]) drawSlopePoint(slopePointsData[0], 'P₁');
   if (slopePointsData[1]) drawSlopePoint(slopePointsData[1], 'P₂');
+  if (slopePointsData2[0]) drawSlopePoint(slopePointsData2[0], 'S₁');
+  if (slopePointsData2[1]) drawSlopePoint(slopePointsData2[1], 'S₂');
 }
 
-function resetSlopePoint(index) {
-  const oldPoint = slopePointsData[index];
+function resetSlopePoint(
+  index,
+  pointsData = slopePointsData,
+  inputPrefix = 'p'
+) {
+  const oldPoint = pointsData[index];
 
-  slopePointsData[index] = null;
+  pointsData[index] = null;
 
   if (oldPoint) {
     pruneUnusedTick('x', oldPoint.x);
     pruneUnusedTick('y', oldPoint.y);
   }
+
   refreshTicks();
   refreshScaleStepLabels();
   redrawAllSpecialPoints();
 
-  if (index === 0) {
-    clearInput('slope-p1-x');
-    clearInput('slope-p1-y');
-  } else {
-    clearInput('slope-p2-x');
-    clearInput('slope-p2-y');
-  }
+  clearInput(`slope-${inputPrefix}${index + 1}-x`);
+  clearInput(`slope-${inputPrefix}${index + 1}-y`);
 }
+
 function resetSlopePoints() {
-  const oldPoints = slopePointsData.slice();
+  const oldPoints = [
+    ...slopePointsData,
+    ...slopePointsData2
+  ];
+
   slopePointsData = [null, null];
+  slopePointsData2 = [null, null];
 
   oldPoints.forEach((pt) => {
     if (pt) {
@@ -764,7 +790,7 @@ function resetSlopePoints() {
   refreshTicks();
   refreshScaleStepLabels();
   redrawAllSpecialPoints();
-   }
+}
 
 function drawIntersectionPoint(kind, value) {
   let point = null;
@@ -831,18 +857,18 @@ function initTrendlineConfigs() {
       activateBtn: $('activate-trendline-1'),
       fixBtn: $('fix-trendline-1'),
       resetBtn: $('reset-trendline-1'),
-      color: '#ab0ddf',
-      fixedColor: '#d21ddb'
+      color: '#0208cb',
+      fixedColor: '#0008ff',
     },
     2: {
       layer: $('trendline-layer-2'),
-      color: '#ab0ddf',
-      fixedColor: '#d21ddb'
+      color: '#0208cb',
+      fixedColor: '#0008ff',
     },
     3: {
       layer: $('trendline-layer-3'),
-      color: '#ab0ddf',
-      fixedColor: '#d21ddb'
+      color: '#0208cb',
+      fixedColor: '#0008ff',
     },
     4: {
       layer: $('trendline-layer-4'),
@@ -850,17 +876,17 @@ function initTrendlineConfigs() {
       fixBtn: $('fix-trendline-4'),
       resetBtn: $('reset-trendline-4'),
       color: '#00897B',
-      fixedColor: '#00695C'
+      fixedColor:'#029688'
     },
     5: {
       layer: $('trendline-layer-5'),
       color: '#00897B',
-      fixedColor: '#00695C'
+      fixedColor: '#029688'
     },
     6: {
       layer: $('trendline-layer-6'),
       color: '#00897B',
-      fixedColor: '#00695C'
+      fixedColor: '#029688'
     }
   };
 }
@@ -1207,6 +1233,7 @@ function getWorkState() {
       points: curveLineState.points.map(pt => ({ x: pt.x, y: pt.y }))
     },
     slopePoints: slopePointsData.map(pt => pt ? { x: pt.x, y: pt.y } : null),
+    slopePoints2: slopePointsData2.map(pt => pt ? { x: pt.x, y: pt.y } : null),
     intersections: {
       x1: intersectionPointsData1.x !== null ? intersectionPointsData1.x : null,
       y1: intersectionPointsData1.y !== null ? intersectionPointsData1.y : null,
@@ -1298,6 +1325,15 @@ function applyWorkState(state) {
     return !Number.isNaN(x) && !Number.isNaN(y) ? { x, y } : null;
   });
 
+    slopePointsData2 = [0, 1].map((index) => {
+    const pt = state.slopePoints2?.[index];
+    if (!pt) return null;
+
+    const x = Number(pt.x);
+    const y = Number(pt.y);
+    return !Number.isNaN(x) && !Number.isNaN(y) ? { x, y } : null;
+  });
+
   const savedIntersections = state.intersections || {};
 
 const savedX1 =
@@ -1381,51 +1417,6 @@ function loadWorkFromFile(event) {
   event.target.value = '';
 }
 
-function clearLabWork() {
-  axisLabels.x = '';
-  axisLabels.y = '';
-  scaleXValue = '';
-  scaleYValue = '';
-  stepXValue = '';
-  stepYValue = '';
-
-  ticksX.clear();
-  ticksY.clear();
-  mappedX = {};
-  mappedY = {};
-  experimentalPointsData = [];
-  slopePointsData = [];
-  intersectionPointsData = { x: null, y: null };
-
-  [
-    'axis-label-input-x',
-    'axis-label-input-y',
-    'scale-input-x',
-    'scale-input-y',
-    'step-input-x',
-    'step-input-y',
-    'point-input-x',
-    'point-input-y',
-    'slope-p1-x',
-    'slope-p1-y',
-    'slope-p2-x',
-    'slope-p2-y',
-    'intersection-x-value',
-    'intersection-y-value',
-  ].forEach(clearInput);
-
-  $('axis-label-x').textContent = '';
-  $('axis-label-y').textContent = '';
-
-  experimentalPointsGroup.innerHTML = '';
-  slopePointsGroup.innerHTML = '';
-  intersectionPointsGroup.innerHTML = '';
-
-  resetAllTrendlines();
-  resetCurveLine();
-  refreshTicks();
-  refreshScaleStepLabels();
-}
 
 function setupInputEvents() {
   $('scale-input-x').addEventListener('input', (e) => updateScale('x', e.target.value));
@@ -1450,6 +1441,7 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
     if (e.key === 'Enter') $('add-point').click();
   });
 
+  // Funcția de adăugare a punctelor de pantă
   $('add-slope-p1').addEventListener('click', () => {
     const p1x = getNumberFromInput('slope-p1-x');
     const p1y = getNumberFromInput('slope-p1-y');
@@ -1512,9 +1504,74 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
     redrawAllSpecialPoints();
   });
 
+    $('add-slope-s1').addEventListener('click', () => {
+    const s1x = getNumberFromInput('slope-s1-x');
+    const s1y = getNumberFromInput('slope-s1-y');
+
+    if (!valuesToSvgPoint(s1x, s1y)) {
+      alert('Verifică scara și coordonatele punctului S₁. Punctul trebuie să fie în interiorul graficului.');
+      return;
+    }
+
+    const oldPoint = slopePointsData2[0];
+
+    slopePointsData2[0] = { x: s1x, y: s1y };
+
+    if (oldPoint) {
+      if (oldPoint.x !== s1x) {
+        pruneUnusedTick('x', oldPoint.x);
+      }
+
+      if (oldPoint.y !== s1y) {
+        pruneUnusedTick('y', oldPoint.y);
+      }
+    }
+
+    addTickX(s1x);
+    addTickY(s1y);
+
+    refreshTicks();
+    refreshScaleStepLabels();
+    redrawAllSpecialPoints();
+  });
+
+  $('add-slope-s2').addEventListener('click', () => {
+    const s2x = getNumberFromInput('slope-s2-x');
+    const s2y = getNumberFromInput('slope-s2-y');
+
+    if (!valuesToSvgPoint(s2x, s2y)) {
+      alert('Verifică scara și coordonatele punctului S₂. Punctul trebuie să fie în interiorul graficului.');
+      return;
+    }
+
+    const oldPoint = slopePointsData2[1];
+
+    slopePointsData2[1] = { x: s2x, y: s2y };
+
+    if (oldPoint) {
+      if (oldPoint.x !== s2x) {
+        pruneUnusedTick('x', oldPoint.x);
+      }
+
+      if (oldPoint.y !== s2y) {
+        pruneUnusedTick('y', oldPoint.y);
+      }
+    }
+
+    addTickX(s2x);
+    addTickY(s2y);
+
+    refreshTicks();
+    refreshScaleStepLabels();
+    redrawAllSpecialPoints();
+  });
+
   $('reset-slope-p1').addEventListener('click', () => resetSlopePoint(0));
   $('reset-slope-p2').addEventListener('click', () => resetSlopePoint(1));
-
+  $('reset-slope-s1').addEventListener('click', () => resetSlopePoint(0, slopePointsData2, 's'));
+  $('reset-slope-s2').addEventListener('click', () => resetSlopePoint(1, slopePointsData2, 's'));
+  
+  
   //Butoane pentru ambele drepte Axis Intercepts
 
   $('add-intersection-x').addEventListener('click', () => {
@@ -1828,11 +1885,23 @@ $('reset-intersection-y-2').addEventListener('click', () => {
   });
 
   $('load-work-input').addEventListener('change', loadWorkFromFile);
-// Butonul de preview
-  $('preview-graph').addEventListener('click', () => {
-  document.body.classList.add('preview-mode');
-  });
 
+ // Listenerul pentru Butonul de preview grafic
+
+$('preview-graph').addEventListener('click', () => {
+  const button = $('preview-graph');
+
+  if (button.classList.contains('is-launching')) return;
+
+  button.classList.add('is-launching');
+
+  setTimeout(() => {
+    document.body.classList.add('preview-mode');
+    button.classList.remove('is-launching');
+  }, 1450);
+});
+
+ // Exit preview
   $('exit-preview').addEventListener('click', () => {
   document.body.classList.remove('preview-mode');
   });
