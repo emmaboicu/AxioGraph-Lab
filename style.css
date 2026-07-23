@@ -4,7 +4,7 @@ body {
   padding: 0;
   width: 100%;
   height: 100vh;
-  font-family: "Raleway", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: #f4f6f8;
   overflow: hidden;
 }
@@ -58,7 +58,7 @@ body {
 }
 /* Etichete axe peste SVG */
 .axis-label-svg {
-  font-family: Arial, sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 5px;
   font-weight: 700;
   fill: #00008b;
@@ -119,27 +119,23 @@ body {
   align-items: center;
 }
 
-.small-title {
-  font-size: 13px;
-  font-weight: 900;
-  color: #444;
-  margin-bottom: 4px;
-  font-family: "Poppins", "Segoe UI", Arial, sans-serif;
-}
-
 .tool-title {
-  font-size: 15px;
-  font-weight: 900;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   white-space: nowrap;
-  font-family: "Poppins", "Segoe UI", Arial, sans-serif;
+  font-family: "Cormorant Garamond", "Barlow Condensed", "Inter", sans-serif;
 }
 
-/* Inputuri */
+/* Inputuri generale*/
 input {
   border: 1px solid #ccc;
   padding: 4px 6px;
   border-radius: 3px;
+  font-family: "Consolas", "Courier New", monospace;
   font-size: 13px;
+  font-weight: 600;
+  color: #111111;
   box-sizing: border-box;
 }
 
@@ -155,24 +151,25 @@ input[type="number"] {
 }
 
 .input-xy {
-  width: 60px;
+  width: 52px;
 }
 
 .input-label {
-  width: 130px;
+  width: 60px;
 }
 .card-labels .input-label {
-  width: 80px;
-  min-width: 80px;
+  width: 100%;
+  min-width: 0;
 }
 
 /* Butoane generale */
 button {
   border: none;
-  border-radius: 7px;
-  padding: 4px 8px;
-  font-weight: 800;
-  font-size: 11px;
+  border-radius: 5px;
+  padding: 3px 4px;
+  font-family:"Inter", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -182,210 +179,11 @@ button:hover:not(:disabled) {
 }
 
 button:disabled {
-  opacity: 0.45;
+  opacity: 0.70;
   cursor: default;
 }
 
-/* CARD 1 */
-.card-1 {
-  border: none;
-  background-color: #380072;
-  flex-direction: row;
-  gap: 10px;
-  justify-content: flex-start;
-  align-items: center;
-  padding: 6px 8px;
-  border-radius: 8px;
-}
-
-.text-labwork {
-  color: #FFFFFF;
-  font-weight: 900;
-  font-size: 18px;
-}
-
-.btn-save {
-  background-color: #FFFFFF;
-  color: #512DA8;
-  border: 1px solid #FFFFFF;
-  margin-left: auto;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.22);
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-}
-
-.btn-save:hover:not(:disabled) {
-  background-color: #F8F9FA;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  transform: translateY(-1px);
-  filter: none;
-}
-
-.btn-load {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #FFFFFF;
-  border: 1px solid #D1C4E9;
-  box-shadow: none;
-  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-}
-
-.btn-load:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.18);
-  border-color: #FFFFFF;
-  transform: translateY(-1px);
-  filter: none;
-}
-
-.btn-labwork {
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 8px;
-}
-
-.card-labels {
-  border: 1.5px solid #b8c0cc;
-  background-color: white;
-  padding: 8px;
-}
-
-.card-labels .row {
-  display: grid;
-  grid-template-columns: auto 1fr 1fr;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-labels .tool-title {
-  white-space: nowrap;
-}
-
-.card-labels .input-label {
-  width: 100%;
-  min-width: 0;
-}
-
-
-/* CARD 2 */
-.card-2 {
-  border: 1.5px solid #b8c0cc;
-  background-color: white;
-  flex-direction: row;
-  gap: 12px;
-  padding: 8px;
-}
-
-.card-2-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.text-scale {
-  font-size: 13px;
-}
-
-.icon-square {
-  width: 16px;
-  height: 16px;
-  display: inline-block;
-  flex: 0 0 auto;
-}
-
-/* CARD 3 */
-.card-3 {
-  border: 1px solid #8b0000;
-  background-color: white;
-}
-.text-datapoint {
-  color: #AD1457;
-}
-
-.btn-p-plus {
-  background-color: #AD1457;
-  border: 1px solid #880E4F;
-  color: white;
-  flex-grow: 1;
-  box-shadow: 0 3px 6px rgba(173, 20, 87, 0.25);
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-}
-
-.btn-p-plus:hover:not(:disabled) {
-  background-color: #D81B60;
-  border-color: #AD1457;
-  box-shadow: 0 4px 8px rgba(173, 20, 87, 0.3);
-  transform: translateY(-1px);
-  filter: none;
-}
-
-/* CARD 4 */
-.card-4 {
-  border: 1px solid #add8e6;
-  background-color: white;
-}
-
-.text-line,
-.text-extend {
-  color: #ab0ddf;
-}
-
-.btn-start {
-  background-color: #673AB7;
-  border: 1px solid #512DA8;
-  color: white;
-  box-shadow: 0 3px 6px rgba(103, 58, 183, 0.25);
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-}
-
-.btn-start:hover:not(:disabled) {
-  background-color: #811A71;
-  border-color: #450077;
-  box-shadow: 0 4px 8px rgba(103, 58, 183, 0.3);
-  transform: translateY(-1px);
-  filter: none;
-}
-
-.btn-start.is-active {
-  background-color: #B39DDB;
-  border: 1px solid #9575CD;
-  color: #F5F5F5;
-  box-shadow: inset 0 2px 5px rgba(81, 45, 168, 0.35);
-  filter: none;
-}
-
-.btn-start.is-active:hover {
-  background-color: #7E57C2;
-  border-color: #673AB7;
-  box-shadow: 0 4px 8px rgba(103, 58, 183, 0.3);
-  transform: translateY(-1px);
-}
-
-.btn-fix {
-  background-color: #976DB9;
-  border: 1px solid #70439B;
-  color: white;
-  box-shadow: 0 3px 6px rgba(103, 58, 183, 0.25);
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-}
-
-.btn-fix:hover:not(:disabled) {
-  background-color: #B39DDB;
-  border-color: #7E57C2;
-  box-shadow: 0 4px 8px rgba(103, 58, 183, 0.3);
-  transform: translateY(-1px);
-  filter: none;
-}
-
-.btn-x {
-  width: 34px;
-  height: 28px;
-  background-color: transparent;
-  color: #777;
-  border: 1px solid #d0d0d0;
-  padding: 0;
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
+/*Butonul Del folosit peste tot*/
 .btn-del-text {
   background: transparent;
   border: 1px solid #b8b8b8;
@@ -406,96 +204,891 @@ button:disabled {
   background-color: #fff3f1;
 }
 
+/* ==================================================
+   CARD 1 — LABWORK, SAVE ȘI LOAD
+   ================================================== */
 
-.btn-x:hover:not(:disabled) {
-  color: #d65a4a;
-  border-color: #d65a4a;
-  background-color: #fff3f1;
+/* Forma cardului */
+.card-1 {
+  border: none;
+  background-color: #061b4b;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 12px 8px;
+  border-radius: 8px;
 }
 
-/* CARD 5 */
-.card-5 {
-  border: 1px solid #f06216f4;
+
+/* Titlul LabWork */
+.text-labwork {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  line-height: 1;
+}
+
+
+/* Aspectul comun al butoanelor Save și Load */
+.btn-labwork {
+  
+  font-family: "Cormorant Garamond", "Barlow Condensed", "Inter", sans-serif, Georgia, serif;
+
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  padding: 3px 8px;
+  border-radius: 8px;
+
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease,
+    opacity 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+/* Mișcare comună pentru Save și Load */
+.btn-labwork:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn-labwork:active:not(:disabled) {
+  transform: translateY(1px);
+  transition-duration: 0.08s;
+}
+
+
+/* Butonul Save — varianta luminoasă, cu glow difuz + gradient */
+.btn-save {
+  margin-left: auto;
+  background: linear-gradient(135deg, #ffffff 0%, #ede9fe 100%);
+  color: #f41cdb;
+  font-weight: 800;
+  border: 1.5px solid #fc94f0;
+  box-shadow:
+    0 0 3px 0.5px rgb(243, 116, 248),
+    0 0 10px 2px rgba(196, 4, 155, 0.548);
+}
+
+.btn-save:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fce7fb 0%, #f9c9f5 100%);
+  color: #d94fc7;
+  border-color: #fc94f0;
+  box-shadow:
+    0 0 3px 0.5px rgba(243, 116, 248, 0.7),
+    0 0 10px 2px rgba(196, 4, 155, 0.35);
+  opacity: 0.92;
+}
+
+
+
+/* Butonul Load — contur mai gros, cu glow strâns doar pe linie */
+.btn-load {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #f5f3ff;
+  border: 1.5px solid #c4b5fd;
+  box-shadow: 0 0 4px 0.5px rgba(196, 181, 253, 0.7);
+}
+
+.btn-load:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #ddd6fe;
+  border-color: #a78bfa;
+  box-shadow: 0 0 6px 1px rgba(167, 139, 250, 0.85);
+  opacity: 0.88;
+}
+
+
+/* CARD 2A: Axes Labels */
+.card-labels {
+  border: 1.5px solid #b8c0cc;
   background-color: white;
+  padding: 8px;
+}
+.text-labels {
+  font-family: "Barlow Condensed", Inter, sans-serif;
+  font-size: 16px;
 }
 
-.btn-orange {
-  background-color: #f06216f4;
-  color: white;
-}
-.text-slope {
-  color: #f06216f4;
+.card-labels .row {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  align-items: center;
+  gap: 8px;
 }
 
-/* CARD 6 */
-.card-6 {
-  border: 1px solid #9f1ef5;
+
+/* CARD 2B: Scales + Steps */
+.card-2 {
+  border: 1.5px solid #b8c0cc;
   background-color: white;
+  flex-direction: row;
+  gap: 20px;
+  padding: 3px 8px 5px;
 }
 
-.text-intercepts {
-  color: #9f1ef5;
+.card-2-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.text-scale {
+  font-family: "Barlow Condensed", Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.card-2 .input-label {
+  width: 80px;
 }
 
-.btn-siclam {
-  background-color: #9f1ef5;
-  color: white;
+.icon-square {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  flex: 0 0 auto;
 }
 
-/* CARD 7 */
-.card-7 {
-  border: 1px solid #ad1457;
-  background-color: #fce4ec;
+/* ==================================================
+   CARD 3 — EXPERIMENTAL POINTS
+   ================================================== */
+
+/* Forma cardului */
+.card-3 {
+  border: 1px solid #8b0000;
+  background-color: white;
+  padding: 6px 8px 8px;
+  gap: 7px;
 }
 
-.text-curveline {
-  color: #d51a6b;
-  font-weight: 900;
+/* Titlul Experimental Points */
+.text-datapoint {
+  font-family: "Barlow Condensed", Inter, sans-serif;
+  color: #AD1457;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
 }
-.btn-curve {
+
+/* Rândul cu x, y, +P și Del Am mărit puțin și inputurile*/
+.card-3-controls {
+  gap: 8px;
+}
+.card-3 .input-xy {
+  width: 58px;
+}
+
+/* Butonul +P ocupă spațiul rămas. Reguli pentru butonul + P */
+.btn-p-plus {
+  flex: 1 1 auto;
   background-color: #AD1457;
   border: 1px solid #880E4F;
   color: white;
   box-shadow: 0 3px 6px rgba(173, 20, 87, 0.25);
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
-.btn-curve:hover:not(:disabled) {
+/* Hover pentru +P */
+.btn-p-plus:hover:not(:disabled) {
   background-color: #D81B60;
   border-color: #AD1457;
   box-shadow: 0 4px 8px rgba(173, 20, 87, 0.3);
   transform: translateY(-1px);
   filter: none;
 }
-
-.btn-curve-fix {
-  background-color: #F06292;
-  border: 1px solid #D81B60;
-  color: white;
-  box-shadow: 0 3px 6px rgba(173, 20, 87, 0.22);
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+/* Animație pentru butonul de adăugare punct +P */
+.btn-p-plus.is-popping {
+  animation: point-button-pop 0.36s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.btn-curve-fix:hover:not(:disabled) {
-  background-color: #F48FB1;
-  border-color: #D81B60;
-  box-shadow: 0 4px 8px rgba(173, 20, 87, 0.28);
-  transform: translateY(-1px);
+@keyframes point-button-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(1.28);
+  }
+
+  75% {
+    transform: scale(0.97);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+
+/* ==================================================
+   CARD 5 ȘI 6; TRENDLINE ȘI EXTEND LINE— MENIURI FLOTANTE 
+   ================================================== */
+
+/* Cardul comun */
+.floating-tool-card {
+  position: relative;
+  border: 1px solid #add8e6;
+  background-color: white;
+  padding: 0px 6px;
+  overflow: visible;
+}
+
+/* Cardul trece deasupra celor următoare când un meniu este deschis */
+.floating-tool-card:has(.ghost-line[open]) {
+  z-index: 50;
+}
+
+
+/* Rândul cu titlul și cele două linii */
+.floating-tool-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  overflow: visible;
+}
+
+
+/* Titlul TrendLine și spațierea*/
+.floating-tool-title {
+  font-family: "Barlow Condensed", "Inter", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #1f1a60;
+}
+.floating-tool-title + .ghost-line {
+  margin-left: 1px;
+}
+
+/* Fiecare meniu individual */
+.ghost-line {
+  position: static;
+  padding: 0;
+}
+/* Regula pentru Extend Line sa stea pe un rând */
+.extendline-title {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+/* Zona clicabilă invizibilă de 44 × 44px */
+.ghost-line-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 44px;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.ghost-line-summary::-webkit-details-marker,
+.ghost-line-summary::marker {
+  display: none;
+}
+
+
+/* Linia în repaus */
+.ghost-line-diagonal {
+  stroke: var(--line-color);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: 1;
+  filter:
+    blur(0)
+    drop-shadow(0 0 0 transparent);
+  transform: translateY(0);
+  
+  transition:
+    opacity 1.1s ease 0.2s,
+    filter 1.1s ease 0.2s,
+    transform 1.1s ease 0.2s,
+    stroke-width 0.2s ease;
+}
+
+
+/* Hover: îngroșare moderată și glow discret */
+.ghost-line-summary:hover .ghost-line-diagonal {
+  stroke-width: 2.9;
+  filter:
+    blur(0)
+    drop-shadow(0 0 2px var(--line-color));
+}
+
+
+/* La deschidere, linia urcă, se transformă în fum și dispare */
+.ghost-line[open] > .ghost-line-summary .ghost-line-diagonal {
+   animation: ghost-line-smoke 1.10s linear both;
+}
+@keyframes ghost-line-smoke {
+  /* Linia începe să urce limpede */
+  0% {
+    opacity: 1;
+    filter:
+      blur(0)
+      drop-shadow(0 0 0 transparent);
+    transform: translateY(0);
+  }
+
+  /* Continuă urcarea înainte de apariția fumului */
+  35% {
+    opacity: 1;
+    filter:
+      blur(0.5px)
+      drop-shadow(0 0 0 transparent);
+    transform: translateY(-3.5px);
+  }
+
+  /* Fumul se formează cât linia este încă opacă */
+  65% {
+    opacity: 1;
+    filter:
+      blur(7px)
+      drop-shadow(0 0 0 transparent);
+    transform: translateY(-6.5px);
+  }
+
+  /* Fumul începe să dispară */
+  82% {
+    opacity: 0.65;
+    filter:
+      blur(9px)
+      drop-shadow(0 0 0 transparent);
+    transform: translateY(-8.2px);
+  }
+
+  /* Dispariția completă */
+  100% {
+    opacity: 0;
+    filter:
+      blur(10px)
+      drop-shadow(0 0 0 transparent);
+    transform: translateY(-10px);
+  }
+}
+
+
+/* × ascuns */
+.ghost-line-x {
+  stroke: var(--line-color);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.35);
+
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+/* × apare după dizolvarea liniei */
+.ghost-line[open] > .ghost-line-summary .ghost-line-x {
+  animation: ghost-x-appear 0.18s ease 1.12s both;
+}
+@keyframes ghost-x-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(0.78);
+  }
+}
+
+
+/* Meniul ocupă întreaga lățime a cardului */
+.ghost-line-content {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  box-sizing: border-box;
+  padding: 8px;
+  background-color: white;
+  border: 1px solid var(--line-color);
+  border-radius: 7px;
+  box-shadow: 0 10px 24px rgba(34, 20, 70, 0.22);
+  white-space: nowrap;
+}
+/* Panoul apare după ce linia și-a terminat dizolvarea */
+.ghost-line[open] > .ghost-line-content {
+  animation: ghost-panel-appear 0.22s ease 0.95s both;
+}
+@keyframes ghost-panel-appear {
+  from {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  to {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Butoanele sunt centrate în meniul lat */
+.ghost-line-content .btn-group {
+  width: 100%;
+  justify-content: center;
+}
+
+/* =========================================================
+   DRAW LINE ȘI FIX LINE — BUTOANE TEXT DIN MENIUL TRENDLINE
+   ========================================================= */
+
+/* Aspectul comun */
+.btn-start,
+.btn-fix {
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 5px 8px;
+  font-family:  "Barlow Condensed","Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  color: var(--button-idle);
+  box-shadow: none;
+  overflow: visible;
+
+  transition:
+    color 0.2s ease,
+    text-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+/* Culorile pentru Draw Line — indigo electric */
+.btn-start {
+  --button-idle: color-mix(in srgb, var(--line-color) 80%, black);
+  --button-hover: var(--line-color);
+  --button-glow: color-mix(in srgb, var(--line-color) 60%, transparent);
+  --button-glow-soft: color-mix(in srgb, var(--line-color) 14%, transparent);
+}
+
+
+/* Culorile pentru Fix Line — violet-indigo mai profund */
+.btn-fix {
+  --button-idle: color-mix(in srgb, var(--fixed-color) 80%, black);
+  --button-hover: var(--fixed-color);
+  --button-glow: color-mix(in srgb, var(--fixed-color) 60%, transparent);
+  --button-glow-soft: color-mix(in srgb, var(--fixed-color) 14%, transparent);
+}
+
+
+/* Underline-ul ascuns */
+.btn-start::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 1px;
+  height: 1.5px;
+  border-radius: 999px;
+  background-color: var(--line-color);
+  box-shadow: 0 1px 2px var(--button-glow);
+  transform: scaleX(0);
+  transform-origin: left center;
+
+  transition: transform 0.2s ease;
+}
+
+
+/* Hover: text mai luminos, glow și mărire optică */
+.btn-start:hover:not(:disabled),
+.btn-fix:hover:not(:disabled) {
+  color: var(--button-hover);
+  text-shadow:
+  0 1px 1px var(--button-glow),
+  0 2px 3px var(--button-glow-soft);
+  transform: translateY(-1px) scale(1.22);
   filter: none;
 }
 
 
-/* CARD 9 */
+/* Underline-ul Draw se trasează la hover */
+.btn-start:hover:not(:disabled)::after {
+  transform: scaleX(1);
+}
+
+/* Underline-ul Fix — complet, dar ascuns și ridicat */
+.btn-fix::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 1px;
+  height: 1.5px;
+  border-radius: 999px;
+  background-color: var(--fixed-color);
+  opacity: 0;
+  transform: translateY(-4px);
+
+  transition:
+    transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.27),
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+/* La hover, underline-ul Fix coboară și se blochează */
+.btn-fix:hover:not(:disabled)::after {
+  opacity: 1;
+  transform: translateY(0);
+  box-shadow: 0 4px 5px var(--button-glow-soft);
+}
+
+
+/* La click, underline-ul face un snap scurt */
+.btn-fix:active:not(:disabled)::after {
+  transform: translateY(1px) scaleX(0.94);
+  transition-duration: 0.07s;
+}
+
+
+/* Mic impuls în momentul apăsării */
+.btn-start:active:not(:disabled) {
+  transform: translateY(0) scale(1.1);
+  transition-duration: 0.08s;
+}
+
+
+/* Draw Line este activ cât timp dreapta poate fi mișcată */
+.btn-start.is-active {
+  color: var(--button-hover);
+  text-shadow:
+  0 0 1px var(--button-glow),
+  1px 1px 2px var(--button-glow-soft);
+  animation: draw-line-pop 0.3s ease;
+  filter: none;
+}
+
+
+/* Underline permanent în starea activă */
+.btn-start.is-active::after {
+  transform: scaleX(1);
+}
+
+
+/* Pop scurt la activare */
+@keyframes draw-line-pop {
+  0% {
+    transform: scale(0.92);
+  }
+
+  60% {
+    transform: scale(1.08);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* =========================================================
+   CARD 7; TRY INTERCEPT — BUTON TEXT SIMPLU DIN CARDUL INTERCEPTS
+   ========================================================= */
+
+.btn-try {
+  background: transparent;
+  border: none;
+  padding: 5px 8px;
+  font-family: "Barlow Condensed", "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  line-height: 1;
+  color: var(--line-color);
+  box-shadow: none;
+
+  transition: 
+     transform 0.25s ease,
+     text-shadow 0.18s ease;
+}
+
+/* Hover: glow discret în culoarea dreptei */
+.btn-try:hover:not(:disabled) {
+  filter: none;
+  text-shadow:
+    0 0 2px color-mix(
+      in srgb,
+      var(--line-color) 45%,
+      transparent
+    );
+}
+/* =========================================================
+   SVG PENTRU ILUSTRARE AXIS INTERCEPTS
+   ========================================================= */
+
+/* Axele OX și OY */
+.ghost-intercept-axis {
+  fill: none;
+  stroke: #00008B;
+  stroke-width: 0.85;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+
+  transition: stroke-width 0.2s ease;
+}
+
+/* Dreapta care intersectează axele */
+.ghost-intercept-diagonal {
+  fill: none;
+  stroke: var(--line-color);
+  stroke-width: 2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+
+  transition: stroke-width 0.2s ease;
+}
+
+/* Hover pe întregul desen */
+.ghost-line-summary:hover .ghost-intercept-axis {
+  stroke-width: 1;
+}
+
+.ghost-line-summary:hover .ghost-intercept-diagonal {
+  stroke-width: 2.4;
+}
+
+/* Inputuri Axis Intercepts */
+.input-xy.input-intercept {
+  width: 58px;
+}
+
+/* Impuls scurt la apăsare */
+.btn-try:active:not(:disabled) {
+  transform: scale(1.18);
+  transition-duration: 0.08s;
+}
+
+/* CARD 7 SLOPE REGULI DE BAZĂ*/
+.card-5 {
+  border: 1px solid #f06216f4;
+  background-color: white;
+}
+.card-5 .ghost-line-content .btn-del-text {
+  transform: translateX(-3px);
+}
+.text-slope {
+  color: #f06216f4;
+}
+.card-5 .floating-tool-title {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+/* CARD 7 SLOPE: Desenul pantei din iconiță */
+.ghost-slope-line {
+  stroke: var(--line-color);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.ghost-slope-guide {
+  fill: none;
+  stroke: #d40000;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.ghost-slope-point {
+  fill: var(--line-color);
+  stroke: #1f1a60;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+
+/* CARD 9 CURVE LINE REGULI GENERALE */
+.card-7 {
+  border: 1px solid #ad1457;
+  background-color: #fbecf1;
+}
+
+.text-curveline {
+  color: #d51a6b;
+  font-weight: 700;
+}
+
+/* Comenzile text pentru Curve Line */
+.btn-curve,
+.btn-curve-fix {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 5px 8px;
+
+  font-family: "Barlow Condensed", "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  line-height: 1;
+
+  transition:
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+/* Draw — culorile vechi păstrate */
+.btn-curve {
+  color: #AD1457;
+}
+
+/* Fix — rozuri mai închise, vizibile pe alb */
+.btn-curve-fix {
+  color: #C2185B;
+}
+
+/* Hover: schimbare de culoare și mișcare, fără blur */
+.btn-curve:hover:not(:disabled) {
+  color: #D81B60;
+  transform: translateY(-1px) scale(1.14);
+  filter: none;
+}
+
+.btn-curve-fix:hover:not(:disabled) {
+  color: #E91E63;
+  transform: translateY(-1px) scale(1.12);
+  filter: none;
+}
+
+/* Impuls scurt la apăsare */
+.btn-curve:active:not(:disabled),
+.btn-curve-fix:active:not(:disabled) {
+  transform: translateY(0) scale(1.12);
+  transition-duration: 0.08s;
+}
+
+/* CARD 10 Pentru vizualizare grafic întreg*/
 .btn-preview-graph {
+  font-family: "Cormorant Garamond", Georgia, serif;
   width: 100%;
-  background-color: #ec2626;
-  color: white;
-  padding: 6px;
-  font-size: 11px;
-  font-weight: 900;
+  background-color: #061b4b;
+  color: #ffffff;
+  padding: 6px 6px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
   margin-top: 5px;
   border-radius: 4px;
-  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 4px;
+
+  transition:
+    background-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+.preview-note {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  opacity: 0.88;
+}
+
+/* Linia care deschide Preview-ul */
+.btn-preview-graph::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(100% - 12px);
+  height: 2px;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #818cf8,
+    #ffffff,
+    #818cf8,
+    transparent
+  );
+
+  opacity: 0;
+  transform: translate(-50%, -50%) scaleX(0);
+  transform-origin: center;
+  box-shadow: 0 0 5px rgba(129, 140, 248, 0.75);
+  pointer-events: none;
+}
+
+.btn-preview-graph.is-launching {
+  pointer-events: none;
+}
+
+.btn-preview-graph.is-launching::after {
+  animation: preview-line-draw 1.6s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+@keyframes preview-line-draw {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleX(0);
+    box-shadow: 0 0 5px rgba(129, 140, 248, 0.75);
+    filter: brightness(1);
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scaleX(1);
+    box-shadow: 0 0 14px rgba(129, 140, 248, 1);
+    filter: brightness(1);
+  }
+
+  88% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scaleX(1);
+    box-shadow:
+      0 0 8px rgba(255, 255, 255, 0.75),
+      0 0 24px 18px rgba(129, 140, 248, 0.9);
+    filter: brightness(1.5);
+   
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleX(1);
+    box-shadow:
+      0 0 34px 34px rgba(129, 140, 248, 0);
+    filter: brightness(1.7);
+    
+  }
 }
 
 /* SVG interaction helpers */
@@ -614,4 +1207,29 @@ body.preview-mode #exit-preview {
   background-color: #380072;
   color: white;
   border-radius: 7px;
+  box-shadow: 0 4px 10px rgba(56, 0, 114, 0.3);
+
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+body.preview-mode #exit-preview:hover {
+  background-color: #5700a8;
+  box-shadow: 0 7px 14px rgba(56, 0, 114, 0.4);
+  transform: translateY(-3px) scale(1.04);
+  filter: none;
+}
+
+body.preview-mode #exit-preview:active {
+  transform: translateY(0) scale(0.96);
+  transition-duration: 0.08s;
+}
+
+
+/* TEMPORAR — test lățime, șterge după ce termini */
+.control-panel {
+  width: 260px !important;
+  min-width: 260px !important;
+  max-width: 260px !important;
 }
