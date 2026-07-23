@@ -90,7 +90,7 @@ body {
 .card {
   border-radius: 4px;
   padding: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -187,21 +187,31 @@ button:disabled {
 .btn-del-text {
   background: transparent;
   border: 1px solid #b8b8b8;
-  color: #444;
-  font-family: "Poppins", "Segoe UI", sans-serif;
-  font-size: 12px;
-  font-weight: 800;
+  color: #0c0015;
+  font-family: "Cormorant Garamond", "Poppins", "Segoe UI", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
   text-transform: none;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   cursor: pointer;
-  padding: 4px 7px;
+  padding: 3px 5px;
   border-radius: 6px;
+  transition:
+  color 0.15s ease,
+  border-color 0.15s ease,
+  background-color 0.15s ease,
+  transform 0.12s ease;
 }
 
 .btn-del-text:hover:not(:disabled) {
   color: #e90410;
   border-color: #e90410;
   background-color: #fff3f1;
+}
+/* Confirmare tactilă discretă la click */
+.btn-del-text:active:not(:disabled) {
+  transform: translateY(1px) scale(0.94);
+  transition-duration: 0.07s;
 }
 
 /* ==================================================
@@ -216,7 +226,7 @@ button:disabled {
   align-items: center;
   justify-content: flex-start;
   gap: 10px;
-  padding: 12px 8px;
+  padding: 8px 8px;
   border-radius: 8px;
 }
 
@@ -303,6 +313,117 @@ button:disabled {
   opacity: 0.88;
 }
 
+
+/* ==================================================
+   DETAIL VIEW — CARD ȘI COMENZI - AXIS MAGNIFIER 
+   ================================================== */
+
+.card-magnifier {
+  position: relative;
+  overflow: visible;
+  border: 1px solid #b8c0cc;
+  background-color: white;
+  padding: 4px 8px;
+  gap: 0;
+}
+
+.magnifier-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 7px;
+}
+
+/* Zona clicabilă Detail View + lupă */
+.magnifier-launch {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 2px 0;
+
+  background: transparent;
+  border: none;
+  color: #1f1a60;
+  box-shadow: none;
+
+  font-family: "Barlow Condensed", "Inter", sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-align: left;
+
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+  transform-origin: left center;
+}
+
+/* Magnifier Hover: schimbare de culoare și mișcare */
+.magnifier-launch:hover:not(:disabled) {
+  color: #0008ff;
+  transform: translateY(-1px) scale(1.14);
+  filter: none;
+}
+
+/* Impuls scurt la apăsare */
+.magnifier-launch:active:not(:disabled) {
+  transform: translateY(0) scale(1.12);
+  transition-duration: 0.08s;
+}
+
+/* Iconița se așază în dreapta zonei de activare */
+.magnifier-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  
+
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+/* Detail View este activ */
+.magnifier-launch[aria-pressed="true"] {
+  color: #0008ff;
+}
+
+.magnifier-launch[aria-pressed="true"] .magnifier-icon {
+  filter: drop-shadow(0 0 2px rgba(0, 8, 255, 0.55));
+}
+
+/* OFF păstrează aspectul general al butonului Del */
+.btn-magnifier-off {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+}
+
+/* Mesajul va apărea sub card fără să împingă cardurile următoare */
+.magnifier-tip {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 70;
+
+  box-sizing: border-box;
+  padding: 8px 8px;
+  border: 1px solid #5c52f3;
+  border-radius: 6px;
+  background-color: white;
+  color: #05022f;
+  box-shadow: 0 6px 14px rgba(31, 26, 96, 0.18);
+
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-align: center;
+  white-space: nowrap;
+}
 
 /* CARD 2A: Axes Labels */
 .card-labels {
@@ -489,7 +610,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   width: 58px;
-  height: 44px;
+  height: 43px;
   padding: 0;
   cursor: pointer;
   line-height: 0;
@@ -990,12 +1111,13 @@ button:disabled {
   width: 100%;
   background-color: #061b4b;
   color: #ffffff;
-  padding: 6px 6px;
+  padding: 4px 6px;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.8px;
   margin-top: 5px;
-  border-radius: 4px;
+  border-radius: 8px;
+  
   position: relative;
   overflow: hidden;
 
@@ -1013,7 +1135,7 @@ button:disabled {
 
 .preview-note {
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.6px;
   opacity: 0.88;
