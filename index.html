@@ -66,6 +66,48 @@
           <input type="file" id="load-work-input" accept=".axio,.json,application/json" style="display:none;">
         </div>
         
+ <!--CARD   MAGNIFIER  DETAIL VIEW-->
+
+<!-- CARD: DETAIL VIEW -->
+<div class="card card-magnifier">
+  <div class="magnifier-row">
+
+    <!-- Pornește modul Detail View -->
+    <button
+      id="activate-magnifier"
+      type="button"
+      class="magnifier-launch"
+      aria-pressed="false"
+    >
+      <span class="magnifier-button-text">Detail View</span>
+
+      <svg
+        class="magnifier-icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <circle cx="10" cy="10" r="6"></circle>
+        <line x1="14.5" y1="14.5" x2="21" y2="21"></line>
+      </svg>
+    </button>
+
+    <!-- Oprește modul Detail View -->
+    <button
+      id="deactivate-magnifier"
+      type="button"
+      class="btn-del-text btn-magnifier-off"
+      disabled
+    >
+      OFF
+    </button>
+
+  </div>
+
+  <span id="magnifier-tip" class="magnifier-tip" role="status" hidden>
+    Tap near an axis to magnify its values.
+  </span>
+</div>
+
         <!-- CARD 2A: Axes Labels -->
 <div class="card card-labels">
   <div class="row row-between">
@@ -553,7 +595,7 @@
           >
 
           <button id="add-slope-p1" class="btn-try">
-            + P₁ ( , )
+            + P₁
           </button>
 
           <button id="reset-slope-p1" class="btn-del-text">Del</button>
@@ -577,7 +619,7 @@
           >
 
           <button id="add-slope-p2" class="btn-try">
-            + P₂ ( , )
+            + P₂
           </button>
 
           <button id="reset-slope-p2" class="btn-del-text">Del</button>
@@ -638,7 +680,7 @@
               placeholder="y₁"
             >
 
-            <button id="add-slope-s1" class="btn-try">+S₁( , )</button>
+            <button id="add-slope-s1" class="btn-try">+S₁</button>
             <button id="reset-slope-s1" class="btn-del-text">Del</button>
         </div>
 
@@ -659,7 +701,7 @@
             placeholder="y₂"
           >
 
-          <button id="add-slope-s2" class="btn-try">+S₂( , )</button>
+          <button id="add-slope-s2" class="btn-try">+S₂</button>
           <button id="reset-slope-s2" class="btn-del-text">Del</button>
        </div>
      </div>
