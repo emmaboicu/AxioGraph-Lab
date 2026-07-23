@@ -60,8 +60,10 @@ let hasUnsavedChanges = false;
 
 let magnifierActive = false;
 /* Zona reală din grafic pe care o vede lupa */
-const MAGNIFIER_SOURCE_LONG = 18;
-const MAGNIFIER_SOURCE_SHORT = 12;
+const MAGNIFIER_SOURCE_LONG = 24;
+const MAGNIFIER_SOURCE_SHORT = 13;
+const MAGNIFIER_TEXT_SIZE = 1.15;
+const MAGNIFIER_TICK_LABEL_COLOR = '#1449b3';
 
 /* Elementele lupei — vor fi găsite în init */
 let magnifierSensorsGroup;
@@ -220,12 +222,7 @@ function addAxisMarker(group, axis, coord, label, color, pointX = null) {
         
       if (hasSpecialTextNear(axis, coord)) {
           group.appendChild(tick);
-
-      if (magnifierExtraLabels) {
-            magnifierExtraLabels.appendChild(text);
-          }
-
-      return;
+          return;
   }
 
   group.appendChild(tick);
@@ -260,6 +257,304 @@ function hasSpecialTextNear(axis, coord, tolerance = 5) {
   });
 }
 
+
+function getNormalSvgPixelScale() {
+  const graphRect = svg.getBoundingClientRect();
+  const viewBox = svg.viewBox.baseVal;
+
+  if (!graphRect.width || !viewBox.width) return 1;
+  return graphRect.width / viewBox.width;
+}
+
+function getSvgNumber(element, attr, fallback = 0) {
+  const value = parseFloat(element.getAttribute(attr));
+  return Number.isNaN(value) ? fallback : value;
+}
+
+function createMagnifierText(textValue, x, y, anchor, color, normalScale) {
+  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  text.textContent = textValue;
+  text.setAttribute('x', x);
+  text.setAttribute('y', y);
+  text.setAttribute('text-anchor', anchor);
+  text.setAttribute('font-size', MAGNIFIER_TEXT_SIZE * normalScale);
+  text.setAttribute('font-family', 'Poppins, Arial, sans-serif');
+  text.setAttribute('font-weight', '700');
+  text.setAttribute('fill', color);
+  text.setAttribute('stroke', '#ffffff');
+  text.setAttribute('stroke-width', 0.35 * normalScale);
+  text.setAttribute('paint-order', 'stroke');
+  text.setAttribute('pointer-events', 'none');
+  text.classList.add('magnifier-fixed-label');
+  return text;
+}
+
+function appendMagnifierAxisLabel(group, axis, value, coord, color, mapPoint, normalScale, pointX = null) {
+  if (isOriginValue(value)) return;
+
+  if (axis === 'x') {
+    const mapped = mapPoint(coord, y0 + 5);
+    group.appendChild(
+      createMagnifierText(value, mapped.x, mapped.y, 'middle', color, normalScale)
+    );
+    return;
+  }
+
+  const labelOnRight = pointX !== null && pointX < originX;
+  const mapped = mapPoint(
+    labelOnRight ? originX + 2.2 : originX - 2.2,
+    coord + 1.2
+  );
+
+  group.appendChild(
+    createMagnifierText(
+      value,
+      mapped.x,
+      mapped.y,
+      labelOnRight ? 'start' : 'end',
+      color,
+      normalScale
+    )
+  );
+}
+
+function cloneLineForMagnifier(line, group, mapPoint, normalScale) {
+  const x1 = getSvgNumber(line, 'x1');
+  const y1 = getSvgNumber(line, 'y1');
+  const x2 = getSvgNumber(line, 'x2');
+  const y2 = getSvgNumber(line, 'y2');
+  const dx = Math.abs(x2 - x1);
+  const dy = Math.abs(y2 - y1);
+  const p1 = mapPoint(x1, y1);
+  const p2 = mapPoint(x2, y2);
+  const cloned = line.cloneNode(false);
+
+  cloned.removeAttribute('marker-end');
+
+  if (dx < 0.01 && dy <= 6) {
+    const center = mapPoint(x1, (y1 + y2) / 2);
+    const half = (dy * normalScale) / 2;
+    cloned.setAttribute('x1', center.x);
+    cloned.setAttribute('x2', center.x);
+    cloned.setAttribute('y1', center.y - half);
+    cloned.setAttribute('y2', center.y + half);
+  } else if (dy < 0.01 && dx <= 6) {
+    const center = mapPoint((x1 + x2) / 2, y1);
+    const half = (dx * normalScale) / 2;
+    cloned.setAttribute('x1', center.x - half);
+    cloned.setAttribute('x2', center.x + half);
+    cloned.setAttribute('y1', center.y);
+    cloned.setAttribute('y2', center.y);
+  } else {
+    cloned.setAttribute('x1', p1.x);
+    cloned.setAttribute('y1', p1.y);
+    cloned.setAttribute('x2', p2.x);
+    cloned.setAttribute('y2', p2.y);
+  }
+
+  cloned.setAttribute('stroke-width', getSvgNumber(line, 'stroke-width', 0.25) * normalScale);
+  group.appendChild(cloned);
+}
+
+function cloneCircleForMagnifier(circle, group, mapPoint, normalScale) {
+  const center = mapPoint(getSvgNumber(circle, 'cx'), getSvgNumber(circle, 'cy'));
+  const cloned = circle.cloneNode(false);
+
+  cloned.setAttribute('cx', center.x);
+  cloned.setAttribute('cy', center.y);
+  cloned.setAttribute('r', getSvgNumber(circle, 'r', 0.7) * normalScale);
+  cloned.setAttribute('stroke-width', getSvgNumber(circle, 'stroke-width', 0) * normalScale);
+  group.appendChild(cloned);
+}
+
+function cloneTextForMagnifier(text, group, mapPoint, normalScale) {
+  if (text.classList.contains('axis-label-svg')) return;
+
+  const mapped = mapPoint(getSvgNumber(text, 'x'), getSvgNumber(text, 'y'));
+  const cloned = text.cloneNode(true);
+
+  cloned.setAttribute('x', mapped.x);
+  cloned.setAttribute('y', mapped.y);
+  cloned.setAttribute('font-size', getSvgNumber(text, 'font-size', 3.4) * normalScale);
+  cloned.setAttribute('stroke-width', getSvgNumber(text, 'stroke-width', 0) * normalScale);
+  group.appendChild(cloned);
+}
+
+function clonePathForMagnifier(path, group, sourceMinX, sourceMinY, magnifierScale, normalScale) {
+  const cloned = path.cloneNode(false);
+  const currentTransform = cloned.getAttribute('transform') || '';
+
+  cloned.setAttribute(
+    'transform',
+    `translate(${-sourceMinX * magnifierScale} ${-sourceMinY * magnifierScale}) scale(${magnifierScale}) ${currentTransform}`.trim()
+  );
+  cloned.setAttribute('vector-effect', 'non-scaling-stroke');
+  cloned.setAttribute('stroke-width', getSvgNumber(path, 'stroke-width', 0.25) * normalScale);
+  group.appendChild(cloned);
+}
+
+function cloneGraphicElementForMagnifier(element, group, mapPoint, sourceMinX, sourceMinY, magnifierScale, normalScale) {
+  const tagName = element.tagName.toLowerCase();
+
+  if (tagName === 'line') cloneLineForMagnifier(element, group, mapPoint, normalScale);
+  if (tagName === 'circle') cloneCircleForMagnifier(element, group, mapPoint, normalScale);
+  if (tagName === 'text') cloneTextForMagnifier(element, group, mapPoint, normalScale);
+  if (tagName === 'path') clonePathForMagnifier(element, group, sourceMinX, sourceMinY, magnifierScale, normalScale);
+}
+
+function cloneGraphGroupForMagnifier(sourceGroup, targetGroup, mapPoint, sourceMinX, sourceMinY, magnifierScale, normalScale) {
+  if (!sourceGroup) return;
+
+  sourceGroup.querySelectorAll('line, circle, text, path').forEach((element) => {
+    cloneGraphicElementForMagnifier(
+      element,
+      targetGroup,
+      mapPoint,
+      sourceMinX,
+      sourceMinY,
+      magnifierScale,
+      normalScale
+    );
+  });
+}
+
+function populateMagnifierExtraLabels(group, mapPoint, normalScale) {
+  const scaleValX = parseFloat(scaleXValue);
+  const scaleValY = parseFloat(scaleYValue);
+  const stepX = parseFloat(stepXValue);
+  const stepY = parseFloat(stepYValue);
+
+  if (!isNaN(scaleValX) && scaleValX !== 0) {
+    Array.from(ticksX).forEach((val) => {
+      if (hasSpecialAxisMarker('x', val)) return;
+      const coord = valueToGridX(val);
+      if (coord !== null) appendMagnifierAxisLabel(group, 'x', val, coord, MAGNIFIER_TICK_LABEL_COLOR, mapPoint, normalScale);
+    });
+  }
+
+  if (!isNaN(scaleValY) && scaleValY !== 0) {
+    Array.from(ticksY).forEach((val) => {
+      if (hasSpecialAxisMarker('y', val)) return;
+      const coord = valueToGridY(val);
+      if (coord !== null) appendMagnifierAxisLabel(group, 'y', val, coord, MAGNIFIER_TICK_LABEL_COLOR, mapPoint, normalScale);
+    });
+  }
+
+  if (!isNaN(scaleValX) && scaleValX !== 0 && !isNaN(stepX) && stepX > 0) {
+    const maxXValue = (gridWidth / 2 / 10) * scaleValX;
+    const numStepsX = Math.floor(maxXValue / stepX);
+    for (let i = -numStepsX; i <= numStepsX; i++) {
+      if (i === 0) continue;
+      const value = Number((i * stepX).toFixed(6));
+      if (hasSpecialAxisMarker('x', value)) continue;
+      const coord = valueToGridX(value);
+      if (coord !== null) appendMagnifierAxisLabel(group, 'x', value, coord, '#146f9c', mapPoint, normalScale);
+    }
+  }
+
+  if (!isNaN(scaleValY) && scaleValY !== 0 && !isNaN(stepY) && stepY > 0) {
+    const maxYValue = (gridHeight / 10) * scaleValY;
+    const numStepsY = Math.floor(maxYValue / stepY);
+    for (let i = 1; i <= numStepsY; i++) {
+      const value = Number((i * stepY).toFixed(6));
+      if (hasSpecialAxisMarker('y', value)) continue;
+      const coord = valueToGridY(value);
+      if (coord !== null) appendMagnifierAxisLabel(group, 'y', value, coord, '#146f9c', mapPoint, normalScale);
+    }
+  }
+
+  experimentalPointsData.forEach((pt) => {
+    const point = valuesToSvgPoint(pt.x, pt.y);
+    if (!point) return;
+    appendMagnifierAxisLabel(group, 'x', pt.x, point.x, '#f63fcb', mapPoint, normalScale);
+    appendMagnifierAxisLabel(group, 'y', pt.y, point.y, '#f63fcb', mapPoint, normalScale, point.x);
+  });
+
+  [...slopePointsData, ...slopePointsData2].forEach((pt) => {
+    if (!pt) return;
+    const point = valuesToSvgPoint(pt.x, pt.y);
+    if (!point) return;
+    appendMagnifierAxisLabel(group, 'x', pt.x, point.x, '#f06216', mapPoint, normalScale);
+    appendMagnifierAxisLabel(group, 'y', pt.y, point.y, '#f06216', mapPoint, normalScale, point.x);
+  });
+
+  [intersectionPointsData1, intersectionPointsData2].forEach((data) => {
+    if (data.x !== null) {
+      const x = valueToGridX(data.x);
+      if (x !== null) appendMagnifierAxisLabel(group, 'x', data.x, x, '#9f1ef5', mapPoint, normalScale);
+    }
+    if (data.y !== null) {
+      const y = valueToGridY(data.y);
+      if (y !== null) appendMagnifierAxisLabel(group, 'y', data.y, y, '#9f1ef5', mapPoint, normalScale);
+    }
+  });
+}
+
+function renderMagnifierContent(sourceMinX, sourceMinY, sourceWidth, sourceHeight) {
+  const lensWidth = magnifierLens.offsetWidth;
+  const lensHeight = magnifierLens.offsetHeight;
+  const magnifierScale = Math.min(lensWidth / sourceWidth, lensHeight / sourceHeight);
+  const normalScale = getNormalSvgPixelScale();
+  const contentWidth = sourceWidth * magnifierScale;
+  const contentHeight = sourceHeight * magnifierScale;
+  const offsetX = (lensWidth - contentWidth) / 2;
+  const offsetY = (lensHeight - contentHeight) / 2;
+
+  magnifierSvg.setAttribute('viewBox', `0 0 ${lensWidth} ${lensHeight}`);
+  magnifierSvg.innerHTML = '<rect class="magnifier-background" x="0" y="0" width="100%" height="100%"></rect>';
+
+  const contentGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  const clipId = 'magnifier-content-clip';
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  const clipPath = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
+  const clipRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+
+  clipPath.setAttribute('id', clipId);
+  clipRect.setAttribute('x', offsetX);
+  clipRect.setAttribute('y', offsetY);
+  clipRect.setAttribute('width', contentWidth);
+  clipRect.setAttribute('height', contentHeight);
+  clipPath.appendChild(clipRect);
+  defs.appendChild(clipPath);
+  magnifierSvg.appendChild(defs);
+
+  contentGroup.setAttribute('clip-path', `url(#${clipId})`);
+  magnifierSvg.appendChild(contentGroup);
+
+  const mapPoint = (x, y) => ({
+    x: offsetX + (x - sourceMinX) * magnifierScale,
+    y: offsetY + (y - sourceMinY) * magnifierScale
+  });
+
+  [
+    $('grid-lines'),
+    $('axes'),
+    tickMarksGroup,
+    scaleStepMarksGroup,
+    $('trendline-layer-1'),
+    $('trendline-layer-2'),
+    $('trendline-layer-3'),
+    $('trendline-layer-4'),
+    $('trendline-layer-5'),
+    $('trendline-layer-6'),
+    $('curveline-layer'),
+    experimentalPointsGroup,
+    slopePointsGroup,
+    intersectionPointsGroup
+  ].forEach((sourceGroup) => {
+    cloneGraphGroupForMagnifier(
+      sourceGroup,
+      contentGroup,
+      mapPoint,
+      sourceMinX,
+      sourceMinY,
+      magnifierScale,
+      normalScale
+    );
+  });
+
+  populateMagnifierExtraLabels(contentGroup, mapPoint, normalScale);
+}
 
 // funcția refreshTicks corectată:
 // - etichetele sunt SVG, nu HTML;
@@ -2006,6 +2301,10 @@ function showMagnifierAt(axis, svgX, svgY) {
 
   let centerX;
   let centerY;
+  let sourceMinX;
+  let sourceMinY;
+  let sourceWidth;
+  let sourceHeight;
 
   if (axis === 'x') {
     /* Pe OX se modifică numai poziția stânga-dreapta */
@@ -2017,15 +2316,10 @@ function showMagnifierAt(axis, svgX, svgY) {
 
     centerY = y0;
 
-    magnifierSvg.setAttribute(
-      'viewBox',
-      [
-        centerX - longHalf,
-        centerY - shortHalf,
-        MAGNIFIER_SOURCE_LONG,
-        MAGNIFIER_SOURCE_SHORT
-      ].join(' ')
-    );
+    sourceMinX = centerX - longHalf;
+    sourceMinY = centerY - shortHalf;
+    sourceWidth = MAGNIFIER_SOURCE_LONG;
+    sourceHeight = MAGNIFIER_SOURCE_SHORT;
   } else {
     /* Pe OY se modifică numai poziția sus-jos */
     centerX = originX;
@@ -2036,15 +2330,10 @@ function showMagnifierAt(axis, svgX, svgY) {
       y0 - longHalf
     );
 
-    magnifierSvg.setAttribute(
-      'viewBox',
-      [
-        centerX - shortHalf,
-        centerY - longHalf,
-        MAGNIFIER_SOURCE_SHORT,
-        MAGNIFIER_SOURCE_LONG
-      ].join(' ')
-    );
+    sourceMinX = centerX - shortHalf;
+    sourceMinY = centerY - longHalf;
+    sourceWidth = MAGNIFIER_SOURCE_SHORT;
+    sourceHeight = MAGNIFIER_SOURCE_LONG;
   }
 
   /* Alegem forma orizontală sau verticală */
@@ -2054,6 +2343,7 @@ function showMagnifierAt(axis, svgX, svgY) {
   /* Trebuie afișată înainte să-i putem măsura dimensiunea */
   magnifierLens.hidden = false;
   magnifierLens.setAttribute('aria-hidden', 'false');
+  renderMagnifierContent(sourceMinX, sourceMinY, sourceWidth, sourceHeight);
 
   const containerRect = $('a4-container').getBoundingClientRect();
   const lensWidth = magnifierLens.offsetWidth;

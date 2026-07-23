@@ -444,14 +444,14 @@ button:disabled {
 
 /* Lupa pentru OX: lată și joasă */
 .magnifier-lens.is-x {
-  width: 170px;
-  height: 90px;
+  width: 240px;
+  height: 130px;
 }
 
 /* Lupa pentru OY: îngustă și înaltă */
 .magnifier-lens.is-y {
-  width: 90px;
-  height: 170px;
+  width: 130px;
+  height: 240px;
 }
 
 .magnifier-lens[hidden] {
