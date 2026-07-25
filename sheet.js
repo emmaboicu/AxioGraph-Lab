@@ -108,8 +108,8 @@ export function drawAxes() {
 
   axesGroup.appendChild(vAxis);
 
-  const originLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  originLabel.textContent = 'O';
+  /*const originLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  originLabel.textContent = '0';
   originLabel.setAttribute('x', originX);
   originLabel.setAttribute('y', y0 + 7);
   originLabel.setAttribute('text-anchor', 'middle');
@@ -118,7 +118,7 @@ export function drawAxes() {
   originLabel.setAttribute('font-weight', '700');
   originLabel.setAttribute('fill', '#00008B');
 
-  axesGroup.appendChild(originLabel);
+  axesGroup.appendChild(originLabel);*/
 }
 
 export function valueToGridX(value, scaleXValue) {

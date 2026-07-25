@@ -1,0 +1,1 @@
+// functii de verificare a slope si intercepts

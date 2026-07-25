@@ -23,14 +23,40 @@ import {
   valuesToSvgPoint as sheetValuesToSvgPoint
 } from './sheet.js';
 
+import {
+  AXIS_LABEL_PRIORITY,
+  resetAxisLabelLayout,
+  queueAxisMarker,
+  renderAxisMarkers
+} from './axisLabelLayout.js';
+
+import {
+  drawExperimentalPoint,
+  drawSlopePoint,
+  drawIntersectionPoint
+} from './specialPointsRenderer.js';
+
+import {
+  renderTrendlineSvg,
+  renderCurveLineSvg
+} from './drawingRenderer.js';
+
+import {
+  createTrendlineConfigs
+} from './trendlineConfig.js';
+
+import {
+  cloneTrendlineState,
+  restoreTrendlineState
+} from './trendlineState.js';
+
+import {
+  renderAxisMagnifier
+} from './axisMagnifierRenderer.js';
 
 
 function $(id) {
   return document.getElementById(id);
-}
-
-function mmToCss(mm) {
-  return mm + 'mm';
 }
 
 
@@ -61,18 +87,48 @@ let intersectionPointsData1 = { x: null, y: null };
 let intersectionPointsData2 = { x: null, y: null };
 let hasUnsavedChanges = false;
 
+/* 
+Declarațiile lupei — vor fi găsite în init  MAGNIFIER SOURCE  DISPARE 
+*/
+
 let magnifierActive = false;
-/* Zona reală din grafic pe care o vede lupa */
-const MAGNIFIER_SOURCE_LONG = 18;
-const MAGNIFIER_SOURCE_SHORT = 12;
+const MAGNIFIER_SOURCE_LONG = 12; 
+const MAGNIFIER_SOURCE_SHORT = 6;  
 
-const MAGNIFIER_SPECIAL_TEXT_SIZE = 3.4;
-
-
-/* Elementele lupei — vor fi găsite în init */
 let magnifierSensorsGroup;
 let magnifierLens;
 let magnifierSvg;
+
+/* ======================================================================
+  MAGNIFIER       Trimite motorului LUPEI starea actuală a aplicației
+ ========================================================================*/
+function renderMagnifierContent(
+  axis,
+  sourceMinX,
+  sourceMinY,
+  sourceWidth,
+  sourceHeight
+) {
+  renderAxisMagnifier({
+    axis,
+    sourceMinX,
+    sourceMinY,
+    sourceWidth,
+    sourceHeight,
+    svg,
+    magnifierLens,
+    magnifierSvg,
+    intersectionPointsData1,
+    intersectionPointsData2,
+    experimentalPointsData,
+    slopePointsData,
+    slopePointsData2,
+    valueToGridX,
+    valueToGridY,
+    valuesToSvgPoint
+  });
+}
+/*--------------------------------------------------------------------*/
 
 
 const trendlineStates = {
@@ -94,6 +150,9 @@ const curveLineState = {
   pointerId: null
 };
 
+/* 
+Starea lucrării: modificată sau salvată 
+=============================================*/
 function markDirty() {
   hasUnsavedChanges = true;
 }
@@ -107,8 +166,7 @@ window.addEventListener('beforeunload', (e) => {
   e.preventDefault();
   e.returnValue = '';
 });
-
-
+/*==========================================================*/
 
 function getSvgPoint(evt) {
   const pt = svg.createSVGPoint();
@@ -128,8 +186,6 @@ function getNumberFromInput(id) {
   return parseFloat(el.value);
 }
 
-
-
 // noile functii care iau calculele din sheet.js
 function valueToGridX(value) {
   return sheetValueToGridX(value, scaleXValue);
@@ -142,7 +198,9 @@ function valueToGridY(value) {
 function valuesToSvgPoint(valueX, valueY) {
   return sheetValuesToSvgPoint(valueX, valueY, scaleXValue, scaleYValue);
 }
+// ----------------------------------------------------
 
+/* Utilitare pentru valorile și tickurile axelor */
 function isOriginValue(value) {
   return Math.abs(Number(value)) < 1e-9;
 }
@@ -178,63 +236,9 @@ function pruneUnusedTick(axis, value) {
   if (axis === 'y' && !isTickYInUse(value)) ticksY.delete(value);
 }
 
-function addAxisMarker(group, axis, coord, label, color, pointX = null) {
-  if (isOriginValue(label)) return;
-
-  const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-
-  if (axis === 'x') {
-    tick.setAttribute('x1', coord);
-    tick.setAttribute('y1', y0 - 1.5);
-    tick.setAttribute('x2', coord);
-    tick.setAttribute('y2', y0 + 1.5);
-
-    text.setAttribute('x', coord);
-    text.setAttribute('y', y0 + 5);
-    text.setAttribute('text-anchor', 'middle');
-  } else {
-    tick.setAttribute('x1', originX - 1.5);
-    tick.setAttribute('y1', coord);
-    tick.setAttribute('x2', originX + 1.5);
-    tick.setAttribute('y2', coord);
-
-    const labelOnRight = pointX !== null && pointX < originX;
-
-    text.setAttribute('x', labelOnRight ? originX + 2.2 : originX - 2.2);
-    text.setAttribute('y', coord + 1.2);
-    text.setAttribute('text-anchor', labelOnRight ? 'start' : 'end');
-  }
-    text.setAttribute('data-axis', axis);
-    tick.setAttribute('stroke', color);
-    tick.setAttribute('stroke-width', 0.45);
-
-
-    text.textContent = label;
-    text.setAttribute('font-size', '3.4');
-    text.setAttribute('font-family', 'Poppins, Arial, sans-serif');
-    text.setAttribute('font-weight', '700');
-    text.setAttribute('fill', color);
-    text.setAttribute('stroke', '#ffffff');
-    text.setAttribute('stroke-width', '0.35');
-    text.setAttribute('paint-order', 'stroke');
-    text.setAttribute('pointer-events', 'none');
-
-      
-      /*  Dacă eticheta este prea apropiată pentru graficul normal,
-          păstrăm tickul pe grafic și mutăm textul numai în lupă.*/
-        
-      if (hasSpecialTextNear(axis, coord)) {
-          group.appendChild(tick);
-
-      return;
-  }
-
-  group.appendChild(tick);
-  group.appendChild(text);
-}
 
 // funcția care șterge inputurile de labels daca se scrie o valoare specială
+/* TREBUIE ȘTEARSĂ ȘI INLOCUITA DE NOUL SISTEM DE PRIORITATI*/
 function hasSpecialAxisMarker(axis, value) {
   const same = (a, b) => Math.abs(Number(a) - Number(b)) < 1e-6;
 
@@ -249,499 +253,9 @@ function hasSpecialAxisMarker(axis, value) {
 
   return false;
 }
-//funcția care nu scrie valori înghesuite
-function hasSpecialTextNear(axis, coord, tolerance = 5) {
-  const groups = [experimentalPointsGroup, slopePointsGroup, intersectionPointsGroup];
-  const texts = groups.flatMap(group =>
-    group ? Array.from(group.querySelectorAll(`text[data-axis="${axis}"]`)) : []
-  );
 
-  return texts.some((text) => {
-    const pos = parseFloat(axis === 'x' ? text.getAttribute('x') : text.getAttribute('y'));
-    return !Number.isNaN(pos) && Math.abs(pos - coord) <= tolerance;
-  });
-}
 
-/* Raportul dintre unitățile SVG și pixelii afișați în Normal View */
-function getNormalSvgPixelScale() {
-  const graphRect = svg.getBoundingClientRect();
-  const viewBox = svg.viewBox.baseVal;
-
-  if (!graphRect.width || !viewBox.width) return 1;
-
-  return graphRect.width / viewBox.width;
-}
-
-
-/* Creează o linie în Axis Detail View */
-function createMagnifierLine(
-  x1,
-  y1,
-  x2,
-  y2,
-  color,
-  strokeWidth
-) {
-  const line = document.createElementNS(
-    'http://www.w3.org/2000/svg',
-    'line'
-  );
-
-  line.setAttribute('x1', x1);
-  line.setAttribute('y1', y1);
-  line.setAttribute('x2', x2);
-  line.setAttribute('y2', y2);
-  line.setAttribute('stroke', color);
-  line.setAttribute('stroke-width', strokeWidth);
-
-  return line;
-}
-
-/* Creează o valoare colorată, păstrată la dimensiunea din Normal View */
-function createMagnifierText(
-  textValue,
-  x,
-  y,
-  anchor,
-  color,
-  normalScale
-) {
-  const text = document.createElementNS(
-    'http://www.w3.org/2000/svg',
-    'text'
-  );
-
-  text.textContent = textValue;
-  text.setAttribute('x', x);
-  text.setAttribute('y', y);
-  text.setAttribute('text-anchor', anchor);
-  text.setAttribute(
-    'font-size',
-    MAGNIFIER_SPECIAL_TEXT_SIZE * normalScale
-  );
-  text.setAttribute('font-family', 'Poppins, Arial, sans-serif');
-  text.setAttribute('font-weight', '700');
-  text.setAttribute('fill', color);
-  text.setAttribute('stroke', '#ffffff');
-  text.setAttribute('stroke-width', 0.35 * normalScale);
-  text.setAttribute('paint-order', 'stroke');
-  text.setAttribute('pointer-events', 'none');
-
-  return text;
-}
-/* Păstrează cele trei grosimi ale foii milimetrice */
-function getMagnifierGridStroke(index, normalScale) {
-  const baseStroke =
-    index % 10 === 0
-      ? gridMajorStroke
-      : index % 5 === 0
-        ? gridMediumStroke
-        : gridFineStroke;
-
-  return baseStroke * normalScale;
-}
-
-/* Desenează numai porțiunea locală de foaie milimetrică */
-function renderMagnifierGrid(
-  group,
-  sourceMinX,
-  sourceMinY,
-  sourceWidth,
-  sourceHeight,
-  mapPoint,
-  normalScale
-) {
-  const xStart = Math.max(x0, Math.ceil(sourceMinX));
-  const xEnd = Math.min(
-    x0 + gridWidth,
-    Math.floor(sourceMinX + sourceWidth)
-  );
-
-  const yStart = Math.max(
-    y0 - gridHeight,
-    Math.ceil(sourceMinY)
-  );
-  const yEnd = Math.min(
-    y0,
-    Math.floor(sourceMinY + sourceHeight)
-  );
-
-  /* Liniile verticale */
-  for (let x = xStart; x <= xEnd; x++) {
-    const top = mapPoint(x, yStart);
-    const bottom = mapPoint(x, yEnd);
-    const gridIndex = Math.round(x - x0);
-
-    group.appendChild(
-      createMagnifierLine(
-        top.x,
-        top.y,
-        bottom.x,
-        bottom.y,
-        '#4fc8fc',
-        getMagnifierGridStroke(gridIndex, normalScale)
-      )
-    );
-  }
-
-  /* Liniile orizontale */
-  for (let y = yStart; y <= yEnd; y++) {
-    const left = mapPoint(xStart, y);
-    const right = mapPoint(xEnd, y);
-    const gridIndex = Math.round(y0 - y);
-
-    group.appendChild(
-      createMagnifierLine(
-        left.x,
-        left.y,
-        right.x,
-        right.y,
-        '#4fc8fc',
-        getMagnifierGridStroke(gridIndex, normalScale)
-      )
-    );
-  }
-}
-
-/* Desenează numai axa pe care a fost activat Detail View */
-function renderMagnifierSelectedAxis(
-  group,
-  axis,
-  sourceMinX,
-  sourceMinY,
-  sourceWidth,
-  sourceHeight,
-  mapPoint,
-  normalScale
-) {
-  if (axis === 'x') {
-    const start = mapPoint(sourceMinX, y0);
-    const end = mapPoint(sourceMinX + sourceWidth, y0);
-
-    group.appendChild(
-      createMagnifierLine(
-        start.x,
-        start.y,
-        end.x,
-        end.y,
-        '#00008B',
-        axisStroke * normalScale
-      )
-    );
-
-    return;
-  }
-
-  const start = mapPoint(originX, sourceMinY);
-  const end = mapPoint(originX, sourceMinY + sourceHeight);
-
-  group.appendChild(
-    createMagnifierLine(
-      start.x,
-      start.y,
-      end.x,
-      end.y,
-      '#00008B',
-      axisStroke * normalScale
-    )
-  );
-}
-
-/* Desenează un tick special și valoarea lui colorată */
-function appendMagnifierSpecialValue(
-  group,
-  axis,
-  value,
-  coord,
-  color,
-  mapPoint,
-  normalScale,
-  pointX = null
-) {
-  if (isOriginValue(value)) return;
-
-  if (axis === 'x') {
-    const tickCenter = mapPoint(coord, y0);
-    const tickHalf = 1.5 * normalScale;
-
-    group.appendChild(
-      createMagnifierLine(
-        tickCenter.x,
-        tickCenter.y - tickHalf,
-        tickCenter.x,
-        tickCenter.y + tickHalf,
-        color,
-        0.45 * normalScale
-      )
-    );
-
-    group.appendChild(
-      createMagnifierText(
-        value,
-        tickCenter.x,
-        tickCenter.y + 5 * normalScale,
-        'middle',
-        color,
-        normalScale
-      )
-    );
-
-    return;
-  }
-
-  const labelOnRight =
-    pointX !== null && pointX < originX;
-
-  const tickCenter = mapPoint(originX, coord);
-  const tickHalf = 1.5 * normalScale;
-  const labelX = labelOnRight
-    ? tickCenter.x + 2.2 * normalScale
-    : tickCenter.x - 2.2 * normalScale;
-
-  group.appendChild(
-    createMagnifierLine(
-      tickCenter.x - tickHalf,
-      tickCenter.y,
-      tickCenter.x + tickHalf,
-      tickCenter.y,
-      color,
-      0.45 * normalScale
-    )
-  );
-
-  group.appendChild(
-    createMagnifierText(
-      value,
-      labelX,
-      tickCenter.y + 1.2 * normalScale,
-      labelOnRight ? 'start' : 'end',
-      color,
-      normalScale
-    )
-  );
-}
-
-/* Adună valorile speciale ale axei, fără dubluri */
-function getMagnifierAxisValues(axis) {
-  const items = [];
-
-  function addValue(value, color, pointX = null) {
-    if (
-      value === null ||
-      value === undefined ||
-      Number.isNaN(Number(value))
-    ) {
-      return;
-    }
-
-    const alreadyExists = items.some(
-      (item) =>
-        Math.abs(Number(item.value) - Number(value)) < 1e-6
-    );
-
-    if (alreadyExists) return;
-
-    const coord =
-      axis === 'x'
-        ? valueToGridX(value)
-        : valueToGridY(value);
-
-    if (coord === null) return;
-
-    items.push({
-      value,
-      coord,
-      color,
-      pointX
-    });
-  }
-
-  /* Prioritatea 1: Intercepts */
-  [intersectionPointsData1, intersectionPointsData2]
-    .forEach((data) => {
-      addValue(
-        axis === 'x' ? data.x : data.y,
-        '#9f1ef5'
-      );
-    });
-
-  /* Prioritatea 2: Experimental Points */
-  experimentalPointsData.forEach((pointData) => {
-    const point = valuesToSvgPoint(
-      pointData.x,
-      pointData.y
-    );
-
-    if (!point) return;
-
-    addValue(
-      axis === 'x' ? pointData.x : pointData.y,
-      '#f63fcb',
-      point.x
-    );
-  });
-
-  /* Prioritatea 3: Slope Points */
-  [...slopePointsData, ...slopePointsData2]
-    .forEach((pointData) => {
-      if (!pointData) return;
-
-      const point = valuesToSvgPoint(
-        pointData.x,
-        pointData.y
-      );
-
-      if (!point) return;
-
-      addValue(
-        axis === 'x' ? pointData.x : pointData.y,
-        '#f06216',
-        point.x
-      );
-    });
-
-  return items;
-}
-
-/* Desenează toate valorile speciale ale axei selectate */
-function renderMagnifierAxisValues(
-  group,
-  axis,
-  mapPoint,
-  normalScale
-) {
-  const items = getMagnifierAxisValues(axis);
-
-  items.forEach((item) => {
-    appendMagnifierSpecialValue(
-      group,
-      axis,
-      item.value,
-      item.coord,
-      item.color,
-      mapPoint,
-      normalScale,
-      item.pointX
-    );
-  });
-}
-
-/* Construiește conținutul complet al Axis Detail View */
-function renderMagnifierContent(
-  axis,
-  sourceMinX,
-  sourceMinY,
-  sourceWidth,
-  sourceHeight
-) {
-  const lensWidth = magnifierLens.offsetWidth;
-  const lensHeight = magnifierLens.offsetHeight;
-
-  const magnifierScale = Math.min(
-    lensWidth / sourceWidth,
-    lensHeight / sourceHeight
-  );
-
-  const normalScale = getNormalSvgPixelScale();
-
-  const contentWidth = sourceWidth * magnifierScale;
-  const contentHeight = sourceHeight * magnifierScale;
-
-  const offsetX = (lensWidth - contentWidth) / 2;
-  const offsetY = (lensHeight - contentHeight) / 2;
-
-  magnifierSvg.setAttribute(
-    'viewBox',
-    `0 0 ${lensWidth} ${lensHeight}`
-  );
-
-  magnifierSvg.innerHTML = `
-    <rect
-      class="magnifier-background"
-      x="0"
-      y="0"
-      width="100%"
-      height="100%"
-    ></rect>
-  `;
-
-  const contentGroup = document.createElementNS(
-    'http://www.w3.org/2000/svg',
-    'g'
-  );
-
-  const defs = document.createElementNS(
-    'http://www.w3.org/2000/svg',
-    'defs'
-  );
-
-  const clipPath = document.createElementNS(
-    'http://www.w3.org/2000/svg',
-    'clipPath'
-  );
-
-  const clipRect = document.createElementNS(
-    'http://www.w3.org/2000/svg',
-    'rect'
-  );
-
-  clipPath.setAttribute(
-    'id',
-    'magnifier-axis-clip'
-  );
-
-  clipRect.setAttribute('x', offsetX);
-  clipRect.setAttribute('y', offsetY);
-  clipRect.setAttribute('width', contentWidth);
-  clipRect.setAttribute('height', contentHeight);
-
-  clipPath.appendChild(clipRect);
-  defs.appendChild(clipPath);
-  magnifierSvg.appendChild(defs);
-
-  contentGroup.setAttribute(
-    'clip-path',
-    'url(#magnifier-axis-clip)'
-  );
-
-  magnifierSvg.appendChild(contentGroup);
-
-  /* Transformă o coordonată din grafic în coordonata din lupă */
-  const mapPoint = (x, y) => ({
-    x: offsetX + (x - sourceMinX) * magnifierScale,
-    y: offsetY + (y - sourceMinY) * magnifierScale
-  });
-
-  renderMagnifierGrid(
-    contentGroup,
-    sourceMinX,
-    sourceMinY,
-    sourceWidth,
-    sourceHeight,
-    mapPoint,
-    normalScale
-  );
-
-  renderMagnifierSelectedAxis(
-    contentGroup,
-    axis,
-    sourceMinX,
-    sourceMinY,
-    sourceWidth,
-    sourceHeight,
-    mapPoint,
-    normalScale
-  );
-
-  renderMagnifierAxisValues(
-    contentGroup,
-    axis,
-    mapPoint,
-    normalScale
-  );
-}
-
-// funcția refreshTicks corectată:
+// funcția refreshTicks corectată: NU CRED CĂ E BUNĂ NICI ACUM
 // - etichetele sunt SVG, nu HTML;
 // - nu scrie peste texte Step existente;
 // - hover-ul folosește un senzor unic pe OX și unul pe OY;
@@ -896,7 +410,7 @@ function refreshScaleStepLabels() {
     const numStepsX = Math.floor(maxXValue / stepX);
 
     for (let i = -numStepsX; i <= numStepsX; i++) {
-      if (i === 0) continue;
+      //if (i === 0) continue;
 
       const value = i * stepX;
       if (hasSpecialAxisMarker('x', value)) continue;
@@ -956,44 +470,7 @@ function refreshScaleStepLabels() {
   }
 }
 
-function drawExperimentalPoint(valueX, valueY) {
-  const pointPosition = valuesToSvgPoint(valueX, valueY);
-  if (!pointPosition) return;
 
-  const x = pointPosition.x;
-  const y = pointPosition.y;
-
-  const pointGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  pointGroup.dataset.valueX = String(valueX);
-  pointGroup.dataset.valueY = String(valueY);
-
-  const createGuideLine = (x1, y1, x2, y2) => {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', x1);
-    line.setAttribute('y1', y1);
-    line.setAttribute('x2', x2);
-    line.setAttribute('y2', y2);
-    line.setAttribute('stroke', '#931976');
-    line.setAttribute('stroke-width', coordGuideStroke);
-    line.setAttribute('stroke-dasharray', '1,1');
-    return line;
-  };
-
-  pointGroup.appendChild(createGuideLine(x, y0, x, y));
-  pointGroup.appendChild(createGuideLine(originX, y, x, y));
-
-  const point = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  point.setAttribute('cx', x);
-  point.setAttribute('cy', y);
-  point.setAttribute('r', 0.7);
-  point.setAttribute('fill', '#f63fcb');
-  pointGroup.appendChild(point);
-
-  addAxisMarker(pointGroup, 'x', x, valueX, '#f63fcb');
-  addAxisMarker(pointGroup, 'y', y, valueY, '#f63fcb',x);
-
-  experimentalPointsGroup.appendChild(pointGroup);
-}
 
 function redrawExperimentalPoints() {
   experimentalPointsGroup.innerHTML = '';
@@ -1012,6 +489,10 @@ function redrawExperimentalPoints() {
   experimentalPointsData = uniquePoints.filter((pt) => valuesToSvgPoint(pt.x, pt.y));
   experimentalPointsData.forEach((pt) => drawExperimentalPoint(pt.x, pt.y));
 }
+
+/*==========================================================================
+ Interacțiunea utilizatorului pentru adăugarea unui punct experimental P (x,y)
+ ===========================================================================*/
 
 function addDataPoint() {
   const button = $('add-point');
@@ -1050,27 +531,11 @@ function addDataPoint() {
   inputX.value = '';
   inputY.value = '';
 }
+/*=====================================================================*/
 
-function deleteTickXValue(val) {
-  if (ticksX.has(val)) {
-    ticksX.delete(val);
-    refreshTicks();
-  }
-}
-
-function deleteTickYValue(val) {
-  if (ticksY.has(val)) {
-    ticksY.delete(val);
-    refreshTicks();
-  }
-}
-
-function deletePointByValues(valX, valY) {
-  experimentalPointsData = experimentalPointsData.filter(pt => !(pt.x === valX && pt.y === valY));
-  refreshTicks();
-  refreshScaleStepLabels();
-  redrawAllSpecialPoints();
-}
+/* =====================================================================
+Șterge valorile experimentale P(x, y) - ambele în același timp
+=======================================================================*/
 function deleteFullDataPoint() {
   const inputX = $('point-input-x');
   const inputY = $('point-input-y');
@@ -1080,7 +545,9 @@ function deleteFullDataPoint() {
 
   if (isNaN(valX) || isNaN(valY)) return;
 
-  deletePointByValues(valX, valY);
+  experimentalPointsData = experimentalPointsData.filter(
+    (pt) => !(pt.x === valX && pt.y === valY)
+  );
 
   pruneUnusedTick('x', valX);
   pruneUnusedTick('y', valY);
@@ -1092,7 +559,9 @@ function deleteFullDataPoint() {
   inputX.value = '';
   inputY.value = '';
 }
+/*=====================================================================*/
 
+/* TREBUIE RESCRISĂ IN SCALEUPDATE.JS DE AICI DISPARE*/
 function updateScale(axis, rawValue) {
   const trimmed = rawValue.trim();
   if (trimmed !== '' && Number.isNaN(parseFloat(trimmed))) return;
@@ -1103,75 +572,68 @@ function updateScale(axis, rawValue) {
   experimentalPointsGroup.innerHTML = '';
   resetAllTrendlines();
   resetCurveLine();
-  resetSlopePoints();
+  resetSlopePoints(); 
   resetIntersections();
   refreshTicks();
   refreshScaleStepLabels();
-  redrawExperimentalPoints();
+  redrawAllSpecialPoints();
 }
 
-function drawSlopePoint(pointData, label) {
-  const point = valuesToSvgPoint(pointData.x, pointData.y);
-  if (!point) return;
 
-  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
-  const guideV = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  guideV.setAttribute('x1', point.x);
-  guideV.setAttribute('y1', y0);
-  guideV.setAttribute('x2', point.x);
-  guideV.setAttribute('y2', point.y);
-  guideV.setAttribute('stroke', '#f06216');
-  guideV.setAttribute('stroke-width', 0.25);
-  guideV.setAttribute('stroke-dasharray', '2,2');
-  group.appendChild(guideV);
-
-  const guideH = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  guideH.setAttribute('x1', originX);
-  guideH.setAttribute('y1', point.y);
-  guideH.setAttribute('x2', point.x);
-  guideH.setAttribute('y2', point.y);
-  guideH.setAttribute('stroke', '#f06216');
-  guideH.setAttribute('stroke-width', 0.25);
-  guideH.setAttribute('stroke-dasharray', '2,2');
-  group.appendChild(guideH);
-
-  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  circle.setAttribute('cx', point.x);
-  circle.setAttribute('cy', point.y);
-  circle.setAttribute('r', 1);
-  circle.setAttribute('fill', '#f06216');
-  circle.setAttribute('stroke', '#ffffff');
-  circle.setAttribute('stroke-width', 0.35);
-  group.appendChild(circle);
-
-  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  text.textContent = label + '(' + pointData.x + '; ' + pointData.y + ')';
-  text.setAttribute('x', point.x + 2.2);
-  text.setAttribute('y', point.y - 2.2);
-  text.setAttribute('font-size', '3.4');
-  text.setAttribute('font-family', 'Poppins, Arial, sans-serif');
-  text.setAttribute('font-weight', '700');
-  text.setAttribute('fill', '#f06216');
-  group.appendChild(text);
-  addAxisMarker(group, 'x', point.x, pointData.x, '#f06216');
-  addAxisMarker(group, 'y', point.y, pointData.y, '#f06216', point.x);
-
-  slopePointsGroup.appendChild(group);
-}
+/* =================================================================
+Curăță stratul Slope și desenează o singură reprezentare
+    pentru fiecare P₁, P₂, S₁ și S₂ 
+====================================================================*/
 
 function redrawSlopePoints() {
   slopePointsGroup.innerHTML = '';
-  if (slopePointsData[0]) drawSlopePoint(slopePointsData[0], 'P₁');
-  if (slopePointsData[1]) drawSlopePoint(slopePointsData[1], 'P₂');
-  if (slopePointsData2[0]) drawSlopePoint(slopePointsData2[0], 'S₁');
-  if (slopePointsData2[1]) drawSlopePoint(slopePointsData2[1], 'S₂');
-}
 
+  if (slopePointsData[0]) {
+    drawSlopePoint(
+      slopePointsData[0],
+      'P₁',
+      valuesToSvgPoint,
+      slopePointsGroup
+    );
+  }
+
+  if (slopePointsData[1]) {
+    drawSlopePoint(
+      slopePointsData[1],
+      'P₂',
+      valuesToSvgPoint,
+      slopePointsGroup
+    );
+  }
+
+  if (slopePointsData2[0]) {
+    drawSlopePoint(
+      slopePointsData2[0],
+      'S₁',
+      valuesToSvgPoint,
+      slopePointsGroup
+    );
+  }
+
+  if (slopePointsData2[1]) {
+    drawSlopePoint(
+      slopePointsData2[1],
+      'S₂',
+      valuesToSvgPoint,
+      slopePointsGroup
+    );
+  }
+}
+/*=======================================================================*/
+
+/* =========================================================================
+      Șterge un singur punct de pantă și îi golește inputurile
+      E FOLOSITA DE BUTONUL DEL 
+  ========================================================================= */
 function resetSlopePoint(
   index,
   pointsData = slopePointsData,
-  inputPrefix = 'p'
+  inputPrefix = 'p'  
 ) {
   const oldPoint = pointsData[index];
 
@@ -1190,6 +652,11 @@ function resetSlopePoint(
   clearInput(`slope-${inputPrefix}${index + 1}-y`);
 }
 
+/* ===============================================================
+TREBUIE STEARSA 
+E FOLOSITA NUMAI IN scaleUpdate CARE SE RESCRIE 
+și apoi ștergem funcția globală resetSlopePoints().
+Șterge toate punctele de pantă, la schimbarea scării, păstrând valorile din inputuri */
 function resetSlopePoints() {
   const oldPoints = [
     ...slopePointsData,
@@ -1213,104 +680,82 @@ function resetSlopePoints() {
   redrawAllSpecialPoints();
 }
 
-function drawIntersectionPoint(kind, value) {
-  let point = null;
+/*================================================================*/
 
-  if (kind === 'x') {
-    const x = valueToGridX(value);
-    if (x === null) return;
-    point = { x: x, y: y0 };
-  }
 
-  if (kind === 'y') {
-    const y = valueToGridY(value);
-    if (y === null) return;
-    point = { x: originX, y: y };
-  }
-
-  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
-  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  circle.setAttribute('cx', point.x);
-  circle.setAttribute('cy', point.y);
-  circle.setAttribute('r', 0.8);
-  circle.setAttribute('fill', '#9f1ef5');
-  circle.setAttribute('stroke', 'none');
-  group.appendChild(circle);
-    if (kind === 'x') {
-  addAxisMarker(group, 'x', point.x, value, '#9f1ef5');
-    }
-
-  if (kind === 'y') {
-  addAxisMarker(group, 'y', point.y, value, '#9f1ef5');
-    }
-
-  intersectionPointsGroup.appendChild(group);
-}
+/*====================================================================== 
+Curăță stratul Intercepts și redesenează toate intersecțiile memorate
+======================================================================== */
 function redrawIntersectionPoints() {
   intersectionPointsGroup.innerHTML = '';
 
-  if (intersectionPointsData1.x !== null) drawIntersectionPoint('x', intersectionPointsData1.x);
-  if (intersectionPointsData1.y !== null) drawIntersectionPoint('y', intersectionPointsData1.y);
+  if (intersectionPointsData1.x !== null) {
+    drawIntersectionPoint(
+      'x',
+      intersectionPointsData1.x,
+      valueToGridX,
+      valueToGridY,
+      intersectionPointsGroup
+    );
+  }
 
-  if (intersectionPointsData2.x !== null) drawIntersectionPoint('x', intersectionPointsData2.x);
-  if (intersectionPointsData2.y !== null) drawIntersectionPoint('y', intersectionPointsData2.y);
+  if (intersectionPointsData1.y !== null) {
+    drawIntersectionPoint(
+      'y',
+      intersectionPointsData1.y,
+      valueToGridX,
+      valueToGridY,
+      intersectionPointsGroup
+    );
+  }
+
+  if (intersectionPointsData2.x !== null) {
+    drawIntersectionPoint(
+      'x',
+      intersectionPointsData2.x,
+      valueToGridX,
+      valueToGridY,
+      intersectionPointsGroup
+    );
+  }
+
+  if (intersectionPointsData2.y !== null) {
+    drawIntersectionPoint(
+      'y',
+      intersectionPointsData2.y,
+      valueToGridX,
+      valueToGridY,
+      intersectionPointsGroup
+    );
+  }
 }
+/* =========================================================================*/
+
+/* ==========================================================================
+Redesenarea centrală a tuturor punctelor și etichetelor speciale
+========================================================================== */
 function redrawAllSpecialPoints() {
+  resetAxisLabelLayout();
+
   experimentalPointsGroup.innerHTML = '';
   slopePointsGroup.innerHTML = '';
   intersectionPointsGroup.innerHTML = '';
 
-  redrawIntersectionPoints();// prioritate 1
-  redrawExperimentalPoints();// prioritate 2
-  redrawSlopePoints();// prioritate 3
+  redrawIntersectionPoints();
+  redrawExperimentalPoints();
+  redrawSlopePoints();
+
+  renderAxisMarkers(tickMarksGroup);
 }
 
-function resetIntersections() {
-  intersectionPointsData = { x: null, y: null };
-  intersectionPointsGroup.innerHTML = '';
-}
+/* ===================================================================
+TRENDLINE   EXTENDLINE   CURVE LINE  GEOMETRIA DESENABILĂ
+=======================================================================*/
 
-function initTrendlineConfigs() {
-  trendlineConfigs = {
-    1: {
-      layer: $('trendline-layer-1'),
-      activateBtn: $('activate-trendline-1'),
-      fixBtn: $('fix-trendline-1'),
-      resetBtn: $('reset-trendline-1'),
-      color: '#0208cb',
-      fixedColor: '#0008ff',
-    },
-    2: {
-      layer: $('trendline-layer-2'),
-      color: '#0208cb',
-      fixedColor: '#0008ff',
-    },
-    3: {
-      layer: $('trendline-layer-3'),
-      color: '#0208cb',
-      fixedColor: '#0008ff',
-    },
-    4: {
-      layer: $('trendline-layer-4'),
-      activateBtn: $('activate-trendline-4'),
-      fixBtn: $('fix-trendline-4'),
-      resetBtn: $('reset-trendline-4'),
-      color: '#00897B',
-      fixedColor:'#029688'
-    },
-    5: {
-      layer: $('trendline-layer-5'),
-      color: '#00897B',
-      fixedColor: '#029688'
-    },
-    6: {
-      layer: $('trendline-layer-6'),
-      color: '#00897B',
-      fixedColor: '#029688'
-    }
-  };
-}
+/* ================================================================
+   1. Actualizează butoanele TrendLine și butoanele Fix/Del pentru Extend Line; 
+      resetează dreptele și prelungirile 
+   ================================================== ===================*/
 
 function updateTrendlineButtons(index) {
   const state = trendlineStates[index];
@@ -1370,6 +815,31 @@ function resetAllTrendlines() {
   resetTrendline(6);
 }
 
+/* ==================================================================
+ 1'   Actualizează butoanele Fix/Del și resetează Curve Line
+====================================================================*/
+function updateCurveLineButtons() {
+  if ($('fix-curveline')) $('fix-curveline').disabled = !curveLineState.isVisible || curveLineState.isFixed;
+    if ($('reset-curveline')) $('reset-curveline').disabled = !curveLineState.isVisible;
+}
+
+function resetCurveLine() {
+  curveLineState.isVisible = false;
+  curveLineState.isFixed = false;
+  curveLineState.points = [];
+  curveLineState.dragIndex = null;
+  curveLineState.pointerId = null;
+
+  const layer = $('curveline-layer');
+  if (layer) layer.innerHTML = '';
+
+  updateCurveLineButtons();
+}
+
+/* ===================================================================
+Creează poziția și starea inițială pentru o dreaptă de tendință 
+trendlineLogic.js.
+===================================================================== */
 function createDefaultTrendline(index) {
   const state = trendlineStates[index];
 
@@ -1386,7 +856,10 @@ function createDefaultTrendline(index) {
   state.isVisible = true;
   state.isFixed = false;
 }
-
+/* ====================================================================
+Creează și poziționează o prelungire pornind de la dreapta fixată
+trendlineLogic.js.
+======================================================================= */
 function createExtensionFromTrendline(index) {
   const baseIndex = index === 5 || index === 6 ? 4 : 1;
   const base = trendlineStates[baseIndex];
@@ -1425,81 +898,21 @@ function createExtensionFromTrendline(index) {
   return true;
 }
 
-
+/* ===========================================================
+2. Desenează TrendLine/Extend Lines și actualizează butoanele
+============================================================ */
 function renderTrendline(index) {
-  const state = trendlineStates[index];
-  const cfg = trendlineConfigs[index];
-  const layer = cfg.layer;
-  layer.innerHTML = '';
-
-  if (!state.isVisible || !state.p1 || !state.p2) {
-    updateTrendlineButtons(index);
-    return;
-  }
-
-  const visibleLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  visibleLine.setAttribute('x1', state.p1.x);
-  visibleLine.setAttribute('y1', state.p1.y);
-  visibleLine.setAttribute('x2', state.p2.x);
-  visibleLine.setAttribute('y2', state.p2.y);
-  visibleLine.setAttribute('stroke', state.isFixed ? cfg.fixedColor : cfg.color);
-  visibleLine.setAttribute('stroke-width', state.isFixed ? 0.45 : 0.6);
-  visibleLine.setAttribute('stroke-opacity', state.isFixed ? 1 : 0.78);
-  visibleLine.setAttribute('stroke-linecap', 'round');
-  if (index !== 1 && index !== 4)  visibleLine.setAttribute('stroke-dasharray', '2,1.6');
-  visibleLine.dataset.role = index === 1 ? 'line' : 'extension';
-  visibleLine.dataset.trendline = String(index);
-  visibleLine.style.cursor = state.isFixed || (index !== 1 && index !== 4) ? 'default' : 'move';
-  layer.appendChild(visibleLine);
-
-  if (!state.isFixed) {
-    if (index === 1 || index === 4) {
-      const hitLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      hitLine.setAttribute('x1', state.p1.x);
-      hitLine.setAttribute('y1', state.p1.y);
-      hitLine.setAttribute('x2', state.p2.x);
-      hitLine.setAttribute('y2', state.p2.y);
-      hitLine.setAttribute('stroke', '#000000');
-      hitLine.setAttribute('stroke-opacity', '0.01');
-      hitLine.setAttribute('stroke-width', 8);
-      hitLine.setAttribute('pointer-events', 'stroke');
-      hitLine.setAttribute('class', 'trend-hit');
-      hitLine.dataset.role = 'line';
-      hitLine.dataset.trendline = String(index);
-      hitLine.style.cursor = 'move';
-      layer.appendChild(hitLine);
-
-      const handle1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      handle1.setAttribute('cx', state.p1.x);
-      handle1.setAttribute('cy', state.p1.y);
-      handle1.setAttribute('r', 1.8);
-      handle1.setAttribute('fill', '#ffffff');
-      handle1.setAttribute('stroke', cfg.color);
-      handle1.setAttribute('stroke-width', 0.4);
-      handle1.setAttribute('class', 'trend-handle');
-      handle1.dataset.role = 'handle1';
-      handle1.dataset.trendline = String(index);
-      handle1.style.cursor = 'grab';
-      layer.appendChild(handle1);
-    }
-
-    const handle2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    handle2.setAttribute('cx', state.p2.x);
-    handle2.setAttribute('cy', state.p2.y);
-    handle2.setAttribute('r', (index !== 1 && index !== 4) ? 2.1 : 1.8);
-    handle2.setAttribute('fill', '#ffffff');
-    handle2.setAttribute('stroke', cfg.color);
-    handle2.setAttribute('stroke-width', 0.4);
-    handle2.setAttribute('class', 'trend-handle');
-    handle2.dataset.role = 'handle2';
-    handle2.dataset.trendline = String(index);
-    handle2.style.cursor = 'grab';
-    layer.appendChild(handle2);
-  }
+  renderTrendlineSvg(
+    index,
+    trendlineStates[index],
+    trendlineConfigs[index]
+  );
 
   updateTrendlineButtons(index);
 }
-
+/*========================================================
+3. Creează punctele inițiale și starea implicită a curbei
+========================================================*/
 function createDefaultCurveLine() {
   curveLineState.points = [
     { x: x0 + 18, y: y0 - 45 },
@@ -1514,115 +927,22 @@ function createDefaultCurveLine() {
   curveLineState.dragIndex = null;
   curveLineState.pointerId = null;
 }
-
-function buildSmoothPath(points) {
-  if (!points || points.length === 0) return '';
-
-  const sorted = [...points].sort((a, b) => a.x - b.x);
-
-  if (sorted.length === 1) {
-    return `M ${sorted[0].x} ${sorted[0].y}`;
-  }
-
-  let d = `M ${sorted[0].x} ${sorted[0].y}`;
-
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const p0 = sorted[i - 1] || sorted[i];
-    const p1 = sorted[i];
-    const p2 = sorted[i + 1];
-    const p3 = sorted[i + 2] || p2;
-
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-
-    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
-  }
-
-  return d;
-}
-
+/*============================================================
+  4. Desenează Curve Line și actualizează butoanele 
+ ==============================================================*/
 function renderCurveLine() {
-  const layer = $('curveline-layer');
-  layer.innerHTML = '';
-
-  if (!curveLineState.isVisible || curveLineState.points.length === 0) {
-    updateCurveLineButtons();
-    return;
-  }
-
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', buildSmoothPath(curveLineState.points));
-  path.setAttribute('fill', 'none');
-  path.setAttribute('stroke', curveLineState.isFixed ? '#d51a6b' : '#AD1457');
-  path.setAttribute('stroke-width', curveLineState.isFixed ? 0.45 : 0.65);
-  path.setAttribute('stroke-linecap', 'round');
-  path.setAttribute('stroke-linejoin', 'round');
-  path.dataset.role = 'curve';
-  layer.appendChild(path);
-
-  if (!curveLineState.isFixed) {
-    curveLineState.points.forEach((pt, index) => {
-      const handle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      handle.setAttribute('cx', pt.x);
-      handle.setAttribute('cy', pt.y);
-      handle.setAttribute('r', 1.8);
-      handle.setAttribute('fill', '#ffffff');
-      handle.setAttribute('stroke', '#AD1457');
-      handle.setAttribute('stroke-width', 0.45);
-      handle.setAttribute('class', 'curve-handle');
-      handle.dataset.role = 'curve-handle';
-      handle.dataset.index = String(index);
-      handle.style.cursor = 'grab';
-      layer.appendChild(handle);
-    });
-  }
+  renderCurveLineSvg(
+    curveLineState,
+    $('curveline-layer')
+  );
 
   updateCurveLineButtons();
-}
+}  
+/*=====================================================================*/
 
-function updateCurveLineButtons() {
-  if ($('fix-curveline')) $('fix-curveline').disabled = !curveLineState.isVisible || curveLineState.isFixed;
-    if ($('reset-curveline')) $('reset-curveline').disabled = !curveLineState.isVisible;
-}
-
-function resetCurveLine() {
-  curveLineState.isVisible = false;
-  curveLineState.isFixed = false;
-  curveLineState.points = [];
-  curveLineState.dragIndex = null;
-  curveLineState.pointerId = null;
-
-  const layer = $('curveline-layer');
-  if (layer) layer.innerHTML = '';
-
-  updateCurveLineButtons();
-}
-
-function clonePoint(point) {
-  if (!point) return null;
-  return { x: point.x, y: point.y };
-}
-
-function cloneTrendlineState(state) {
-  return {
-    isVisible: state.isVisible,
-    isFixed: state.isFixed,
-    p1: clonePoint(state.p1),
-    p2: clonePoint(state.p2)
-  };
-}
-
-function restoreTrendlineState(target, saved) {
-  target.isVisible = !!saved?.isVisible;
-  target.isFixed = !!saved?.isFixed;
-  target.p1 = clonePoint(saved?.p1);
-  target.p2 = clonePoint(saved?.p2);
-  target.dragMode = null;
-  target.pointerId = null;
-  target.lastPoint = null;
-}
+/* =====================================================================
+   MOTORUL SAVE/LOAD — SALVEAZĂ ȘI RESTAUREAZĂ LUCRAREA .AXIO
+   ===================================================================== */
 
 function getWorkState() {
   return {
@@ -1676,6 +996,7 @@ function readSavedNumber(value) {
 
   return number;
 }
+
 
 function applyWorkState(state) {
   if (!state || state.app !== 'AxioGraph') {
@@ -1792,6 +1113,9 @@ intersectionPointsData2 = {
 
   markSaved();
 }
+/*La final vom revizui doar refreshScaleStepLabels() și redrawAllSpecialPoints()
+ pentru noul sistem de priorități.
+ ------------------------------------------------------------------------------*/
 
 function buildDefaultFilename() {
   const now = new Date();
@@ -1837,7 +1161,13 @@ function loadWorkFromFile(event) {
   reader.readAsText(file);
   event.target.value = '';
 }
+/* ========================SE TERMINA MOTORUL SAVE=================================*/
 
+/* ===================================================================
+   EVENIMENTELE PANOULUI — CONECTEAZĂ INPUTURILE ȘI BUTOANELE
+   Sunt centralizate toate listener-ele pentru 
+   Scale, Steps, Points, TrendLines, Curve, Save/Load și Preview.
+   ================================================== ================*/
 
 function setupInputEvents() {
   $('scale-input-x').addEventListener('input', (e) => updateScale('x', e.target.value));
@@ -1862,7 +1192,9 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
     if (e.key === 'Enter') $('add-point').click();
   });
 
-  // Funcția de adăugare a punctelor de pantă
+/*
+Interacțiunea utilizatorului pentru adăugarea și ștergerea punctelor de pantă
+*/
   $('add-slope-p1').addEventListener('click', () => {
     const p1x = getNumberFromInput('slope-p1-x');
     const p1y = getNumberFromInput('slope-p1-y');
@@ -1992,8 +1324,10 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
   $('reset-slope-s1').addEventListener('click', () => resetSlopePoint(0, slopePointsData2, 's'));
   $('reset-slope-s2').addEventListener('click', () => resetSlopePoint(1, slopePointsData2, 's'));
   
-  
-  //Butoane pentru ambele drepte Axis Intercepts
+ /*
+ Interacțiunea utilizatorului 
+ pentru adăugarea și ștergerea intersecțiilor cu axele
+ */
 
   $('add-intersection-x').addEventListener('click', () => {
   const value = getNumberFromInput('intersection-x-value');
@@ -2134,7 +1468,7 @@ $('reset-intersection-y-2').addEventListener('click', () => {
   refreshScaleStepLabels();
   redrawAllSpecialPoints();
 });
-// aici se termină al doilea buton de intersecții cu axele
+// ==========================================================================
 
   $('activate-trendline-1').addEventListener('click', () => {
     resetTrendline(2);
@@ -2231,7 +1565,6 @@ $('reset-intersection-y-2').addEventListener('click', () => {
   });
 
 
-
   $('activate-extensions').addEventListener('click', () => {
     if (!trendlineStates[2].isVisible || !trendlineStates[3].isVisible) {
       const ok2 = createExtensionFromTrendline(2);
@@ -2306,6 +1639,7 @@ $('reset-intersection-y-2').addEventListener('click', () => {
   });
 
   $('load-work-input').addEventListener('change', loadWorkFromFile);
+  
 
  // Listenerul pentru Butonul de preview grafic
 
@@ -2327,7 +1661,15 @@ $('preview-graph').addEventListener('click', () => {
   document.body.classList.remove('preview-mode');
   });
 }
+/*=====================================================
+De verificat listenerele !!!!!!
+  ===================================================================*/
 
+/*====================================================================
+COORDONARE DINTRE SVG, STARE APLICAȚIE ȘI RENDERE
+======================================================================*/
+
+/* Controlează deplasarea dreptelor, prelungirilor și curbei cu mouse-ul sau atingerea */
 function setupPointerEvents() {
   svg.addEventListener('pointerdown', (evt) => {
     const role = evt.target.dataset.role;
@@ -2427,6 +1769,7 @@ function setupPointerEvents() {
   svg.addEventListener('pointerdown', () => markDirty(), true);
 }
 
+/* Marchează lucrarea ca modificată după scriere sau apăsarea butoanelor */
 function setupDirtyEvents() {
   /* Detectează scrierea în inputuri */
   $('controls').addEventListener('input', (e) => {
@@ -2452,6 +1795,11 @@ function setupDirtyEvents() {
     markDirty();
   }, true);
 }
+/*====================================================================*/
+
+/* ==================================================================
+   AXIS DETAIL VIEW — SENZORI, RANDARE ȘI CONTROLUL LUPEI
+   ================================================================== */
 
 /* Ascunde fereastra lupei */
 function hideMagnifierLens() {
@@ -2511,7 +1859,7 @@ function showMagnifierAt(axis, svgX, svgY) {
     centerY = clamp(
       svgY,
       y0 - gridHeight + longHalf,
-      y0 - longHalf
+      y0
     );
 
     sourceMinX = centerX - shortHalf;
@@ -2615,7 +1963,7 @@ function setupMagnifierEngine() {
     }
 
     sensor.setAttribute('fill', 'transparent');
-    sensor.setAttribute('pointer-events', 'all');
+    //sensor.setAttribute('pointer-events', 'all');
     sensor.style.cursor = 'zoom-in';
 
     /*
@@ -2693,6 +2041,9 @@ function setupMagnifierControls() {
   setMagnifierActive(false);
 }
 
+/*================================================================*/
+
+
 function init() {
   svg = $('graph');
   tickContainer = $('tick-container');
@@ -2702,7 +2053,7 @@ function init() {
   slopePointsGroup = $('slope-points');
   intersectionPointsGroup = $('intersection-points');
 
-  initTrendlineConfigs();
+  trendlineConfigs = createTrendlineConfigs($);
 
   drawGrid();
   drawAxes();
