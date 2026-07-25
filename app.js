@@ -61,7 +61,6 @@ function $(id) {
 
 
 let svg;
-let tickContainer;
 let tickMarksGroup;
 let scaleStepMarksGroup;
 let experimentalPointsGroup;
@@ -75,11 +74,7 @@ let scaleYValue = '';
 let stepXValue = '';
 let stepYValue = '';
 
-const ticksX = new Set();
-const ticksY = new Set();
 
-let mappedX = {};
-let mappedY = {};
 let experimentalPointsData = [];
 let slopePointsData = [];
 let slopePointsData2 = [];
@@ -201,17 +196,6 @@ function valuesToSvgPoint(valueX, valueY) {
 // ----------------------------------------------------
 
 /* Utilitare pentru valorile și tickurile axelor */
-function isOriginValue(value) {
-  return Math.abs(Number(value)) < 1e-9;
-}
-
-function addTickX(value) {
-  if (!isOriginValue(value)) ticksX.add(value);
-}
-
-function addTickY(value) {
-  if (!isOriginValue(value)) ticksY.add(value);
-}
 
 function isTickXInUse(value) {
   return experimentalPointsData.some(pt => pt.x === value) ||
@@ -229,172 +213,10 @@ function isTickYInUse(value) {
     intersectionPointsData2.y === value;
 }
 
-function pruneUnusedTick(axis, value) {
-  if (value === null || value === undefined || Number.isNaN(value)) return;
-
-  if (axis === 'x' && !isTickXInUse(value)) ticksX.delete(value);
-  if (axis === 'y' && !isTickYInUse(value)) ticksY.delete(value);
-}
-
-
-// funcția care șterge inputurile de labels daca se scrie o valoare specială
-/* TREBUIE ȘTEARSĂ ȘI INLOCUITA DE NOUL SISTEM DE PRIORITATI*/
-function hasSpecialAxisMarker(axis, value) {
-  const same = (a, b) => Math.abs(Number(a) - Number(b)) < 1e-6;
-
-  if (experimentalPointsData.some(pt => axis === 'x' ? same(pt.x, value) : same(pt.y, value))) return true;
-  if (slopePointsData.some(pt => pt && (axis === 'x' ? same(pt.x, value) : same(pt.y, value)))) return true;
-  if (slopePointsData2.some(pt => pt && (axis === 'x' ? same(pt.x, value) : same(pt.y, value)))) return true;
-
-  if (axis === 'x' && intersectionPointsData1.x !== null && same(intersectionPointsData1.x, value)) return true;
-  if (axis === 'y' && intersectionPointsData1.y !== null && same(intersectionPointsData1.y, value)) return true;
-  if (axis === 'x' && intersectionPointsData2.x !== null && same(intersectionPointsData2.x, value)) return true;
-  if (axis === 'y' && intersectionPointsData2.y !== null && same(intersectionPointsData2.y, value)) return true;
-
-  return false;
-}
-
-
-// funcția refreshTicks corectată: NU CRED CĂ E BUNĂ NICI ACUM
-// - etichetele sunt SVG, nu HTML;
-// - nu scrie peste texte Step existente;
-// - hover-ul folosește un senzor unic pe OX și unul pe OY;
-// - hover-ul arată maxim 3 valori din zona cursorului;
-// - hover-ul pe OY este rotit.
-function refreshTicks() {
-  mappedX = {};
-  mappedY = {};
-  tickContainer.innerHTML = '';
-  tickMarksGroup.innerHTML = '';
-
-  const scaleValX = parseFloat(scaleXValue);
-  const scaleValY = parseFloat(scaleYValue);
-
-  function makeSvgText(textValue, x, y, anchor, size = 3.8) {
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.textContent = textValue;
-    text.setAttribute('x', x);
-    text.setAttribute('y', y);
-    text.setAttribute('text-anchor', anchor);
-    text.setAttribute('font-size', size);
-    text.setAttribute('font-family', 'Poppins, Arial, sans-serif');
-    text.setAttribute('font-weight', '700');
-    text.setAttribute('fill', '#1449b3');
-    text.setAttribute('pointer-events', 'none');
-
-    return text;
-  }
-
-  function hasTextNear(x, y, toleranceX = 5, toleranceY = 4) {
-    const stepTexts = scaleStepMarksGroup
-      ? Array.from(scaleStepMarksGroup.querySelectorAll('text'))
-      : [];
-
-    const tickTexts = Array.from(tickMarksGroup.querySelectorAll('text'));
-    const texts = [...stepTexts, ...tickTexts];
-
-    for (const text of texts) {
-      const tx = parseFloat(text.getAttribute('x'));
-      const ty = parseFloat(text.getAttribute('y'));
-
-      if (Number.isNaN(tx) || Number.isNaN(ty)) continue;
-
-      if (Math.abs(tx - x) <= toleranceX && Math.abs(ty - y) <= toleranceY) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-
-
-  let xItems = [];
-  let yItems = [];
-
-  if (!isNaN(scaleValX) && scaleValX !== 0) {
-    xItems = Array.from(ticksX)
-      .sort((a, b) => a - b)
-      .map((val) => ({
-        val,
-        coord: originX + Math.round((val / scaleValX) * 10)
-      }))
-      .filter((item) => item.coord >= x0 && item.coord <= x0 + gridWidth);
-
-    let lastLabelX = -Infinity;
-    const minLabelSpacingX = 8;
-    const labelY = y0 + 8;
-
-    xItems.forEach((item) => {
-      const val = item.val;
-      const xCoord = item.coord;
-      if (hasSpecialAxisMarker('x', val)) return;
-
-      mappedX[val] = xCoord;
-
-      const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      tick.setAttribute('x1', xCoord);
-      tick.setAttribute('y1', y0);
-      tick.setAttribute('x2', xCoord);
-      tick.setAttribute('y2', y0 + 4);
-      tick.setAttribute('stroke', 'red');
-      tick.setAttribute('stroke-width', axisTickStroke);
-      tickMarksGroup.appendChild(tick);
-
-      const canShowLabel =
-        xCoord - lastLabelX >= minLabelSpacingX &&
-        !hasTextNear(xCoord, labelY);
-
-      if (canShowLabel) {
-        const text = makeSvgText(val, xCoord, labelY, 'middle');
-        tickMarksGroup.appendChild(text);
-        lastLabelX = xCoord;
-      }
-    });
-
-  }
-
-  if (!isNaN(scaleValY) && scaleValY !== 0) {
-    yItems = Array.from(ticksY)
-      .sort((a, b) => a - b)
-      .map((val) => ({
-        val,
-        coord: y0 - Math.round((val / scaleValY) * 10)
-      }))
-      .filter((item) => item.coord <= y0 && item.coord >= y0 - gridHeight);
-
-    let lastLabelY = Infinity;
-    const minLabelSpacingY = 6;
-    const labelX = originX - 4;
-
-    yItems.forEach((item) => {
-      const val = item.val;
-      const yCoord = item.coord;
-      if (hasSpecialAxisMarker('y', val)) return;
-
-      mappedY[val] = yCoord;
-
-      const ytick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      ytick.setAttribute('x1', originX);
-      ytick.setAttribute('y1', yCoord);
-      ytick.setAttribute('x2', originX - 4);
-      ytick.setAttribute('y2', yCoord);
-      ytick.setAttribute('stroke', 'red');
-      ytick.setAttribute('stroke-width', axisTickStroke);
-      tickMarksGroup.appendChild(ytick);
-            const canShowLabel =
-        Math.abs(yCoord - lastLabelY) >= minLabelSpacingY &&
-        !hasTextNear(labelX, yCoord + 1.2);
-
-      if (canShowLabel) {
-        const text = makeSvgText(val, labelX, yCoord + 1.2, 'end');
-        tickMarksGroup.appendChild(text);
-        lastLabelY = yCoord;
-      }
-    });
-
-  }
-}
+/*=========================================================================
+Golește vechiul strat steps; Construiește tickurile si textele;
+Le pune în coada de priorități pt OX si Oy
+============================================================================*/
 function refreshScaleStepLabels() {
   if (!scaleStepMarksGroup) return;
 
@@ -413,7 +235,6 @@ function refreshScaleStepLabels() {
       //if (i === 0) continue;
 
       const value = i * stepX;
-      if (hasSpecialAxisMarker('x', value)) continue;
       const x = originX + (value / scaleX) * 10;
 
       if (x < x0 || x > x0 + gridWidth) continue;
@@ -425,8 +246,7 @@ function refreshScaleStepLabels() {
       mark.setAttribute('y2', y0 + 1.5);
       mark.setAttribute('stroke', '#146f9c');
       mark.setAttribute('stroke-width', 0.25);
-      scaleStepMarksGroup.appendChild(mark);
-
+     
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.textContent = Number(value.toFixed(6));
       text.setAttribute('x', x);
@@ -435,7 +255,15 @@ function refreshScaleStepLabels() {
       text.setAttribute('font-size', '3.2');
       text.setAttribute('font-family', 'Poppins, sans-serif');
       text.setAttribute('fill', '#146f9c');
-      scaleStepMarksGroup.appendChild(text);
+
+      queueAxisMarker({
+        group: scaleStepMarksGroup,
+        axis: 'x',
+        coord: x,
+        text,
+        tick: mark,
+        priority: AXIS_LABEL_PRIORITY.step
+      });
     }
   }
 
@@ -445,7 +273,6 @@ function refreshScaleStepLabels() {
 
     for (let i = 1; i <= numStepsY; i++) {
       const value = i * stepY;
-      if (hasSpecialAxisMarker('y', value)) continue;
       const y = y0 - (value / scaleY) * 10;
 
       const mark = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -455,8 +282,7 @@ function refreshScaleStepLabels() {
       mark.setAttribute('y2', y);
       mark.setAttribute('stroke', '#146f9c');
       mark.setAttribute('stroke-width', 0.25);
-      scaleStepMarksGroup.appendChild(mark);
-
+      
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.textContent = Number(value.toFixed(6));
       text.setAttribute('x', originX - 3);
@@ -465,7 +291,14 @@ function refreshScaleStepLabels() {
       text.setAttribute('font-size', '3.2');
       text.setAttribute('font-family', 'Poppins, sans-serif');
       text.setAttribute('fill', '#146f9c');
-      scaleStepMarksGroup.appendChild(text);
+      queueAxisMarker({
+        group: scaleStepMarksGroup,
+        axis: 'y',
+        coord: y,
+        text,
+        tick: mark,
+        priority: AXIS_LABEL_PRIORITY.step
+      });
     }
   }
 }
@@ -487,7 +320,13 @@ function redrawExperimentalPoints() {
   });
 
   experimentalPointsData = uniquePoints.filter((pt) => valuesToSvgPoint(pt.x, pt.y));
-  experimentalPointsData.forEach((pt) => drawExperimentalPoint(pt.x, pt.y));
+  experimentalPointsData.forEach((pt) => drawExperimentalPoint(
+    pt.x,
+    pt.y,
+    valuesToSvgPoint,
+    coordGuideStroke,
+    experimentalPointsGroup
+    ));
 }
 
 /*==========================================================================
@@ -520,12 +359,8 @@ function addDataPoint() {
     return;
   }
 
-  addTickX(valX);
-  addTickY(valY);
   experimentalPointsData.push({ x: valX, y: valY });
 
-  refreshTicks();
-  refreshScaleStepLabels();
   redrawAllSpecialPoints();
 
   inputX.value = '';
@@ -549,11 +384,6 @@ function deleteFullDataPoint() {
     (pt) => !(pt.x === valX && pt.y === valY)
   );
 
-  pruneUnusedTick('x', valX);
-  pruneUnusedTick('y', valY);
-
-  refreshTicks();
-  refreshScaleStepLabels();
   redrawAllSpecialPoints();
 
   inputX.value = '';
@@ -573,9 +403,7 @@ function updateScale(axis, rawValue) {
   resetAllTrendlines();
   resetCurveLine();
   resetSlopePoints(); 
-  resetIntersections();
-  refreshTicks();
-  refreshScaleStepLabels();
+
   redrawAllSpecialPoints();
 }
 
@@ -627,60 +455,17 @@ function redrawSlopePoints() {
 /*=======================================================================*/
 
 /* =========================================================================
-      Șterge un singur punct de pantă și îi golește inputurile
+      Șterge un singur punct de pantă și îi NU golește inputurile
       E FOLOSITA DE BUTONUL DEL 
   ========================================================================= */
+
 function resetSlopePoint(
   index,
-  pointsData = slopePointsData,
-  inputPrefix = 'p'  
+  pointsData = slopePointsData
 ) {
-  const oldPoint = pointsData[index];
-
   pointsData[index] = null;
-
-  if (oldPoint) {
-    pruneUnusedTick('x', oldPoint.x);
-    pruneUnusedTick('y', oldPoint.y);
-  }
-
-  refreshTicks();
-  refreshScaleStepLabels();
-  redrawAllSpecialPoints();
-
-  clearInput(`slope-${inputPrefix}${index + 1}-x`);
-  clearInput(`slope-${inputPrefix}${index + 1}-y`);
-}
-
-/* ===============================================================
-TREBUIE STEARSA 
-E FOLOSITA NUMAI IN scaleUpdate CARE SE RESCRIE 
-și apoi ștergem funcția globală resetSlopePoints().
-Șterge toate punctele de pantă, la schimbarea scării, păstrând valorile din inputuri */
-function resetSlopePoints() {
-  const oldPoints = [
-    ...slopePointsData,
-    ...slopePointsData2
-  ];
-
-  slopePointsData = [null, null];
-  slopePointsData2 = [null, null];
-
-  oldPoints.forEach((pt) => {
-    if (pt) {
-      pruneUnusedTick('x', pt.x);
-      pruneUnusedTick('y', pt.y);
-    }
-  });
-
-  slopePointsGroup.innerHTML = '';
-
-  refreshTicks();
-  refreshScaleStepLabels();
   redrawAllSpecialPoints();
 }
-
-/*================================================================*/
 
 
 /*====================================================================== 
@@ -740,6 +525,8 @@ function redrawAllSpecialPoints() {
   experimentalPointsGroup.innerHTML = '';
   slopePointsGroup.innerHTML = '';
   intersectionPointsGroup.innerHTML = '';
+
+  refreshScaleStepLabels();
 
   redrawIntersectionPoints();
   redrawExperimentalPoints();
@@ -955,12 +742,10 @@ function getWorkState() {
     },
     scale: { x: scaleXValue, y: scaleYValue },
     step: { x: stepXValue, y: stepYValue },
-    ticks: {
-      x: Array.from(ticksX).filter((v) => !isOriginValue(v)),
-      y: Array.from(ticksY).filter((v) => !isOriginValue(v))
-    },
+
     experimentalPoints: experimentalPointsData.map(pt => ({ x: pt.x, y: pt.y })),
-   trendlines: {
+    
+    trendlines: {
       1: cloneTrendlineState(trendlineStates[1]),
       2: cloneTrendlineState(trendlineStates[2]),
       3: cloneTrendlineState(trendlineStates[3]),
@@ -999,73 +784,61 @@ function readSavedNumber(value) {
 
 
 function applyWorkState(state) {
-  if (!state || state.app !== 'AxioGraph') {
-    alert('Fișierul ales nu pare să fie o lucrare Axio validă.');
-    return;
-  }
+    if (!state || state.app !== 'AxioGraph') {
+      alert('Fișierul ales nu pare să fie o lucrare Axio validă.');
+      return;
+    }
 
-  axisLabels.x = state.axisLabels?.x || '';
-  axisLabels.y = state.axisLabels?.y || '';
+    axisLabels.x = state.axisLabels?.x || '';
+    axisLabels.y = state.axisLabels?.y || '';
 
-  $('axis-label-input-x').value = axisLabels.x;
-  $('axis-label-input-y').value = axisLabels.y;
-  $('axis-label-x').textContent = axisLabels.x;
-  $('axis-label-y').textContent = axisLabels.y;
+    $('axis-label-input-x').value = axisLabels.x;
+    $('axis-label-input-y').value = axisLabels.y;
+    $('axis-label-x').textContent = axisLabels.x;
+    $('axis-label-y').textContent = axisLabels.y;
 
-  scaleXValue = state.scale?.x || '';
-  scaleYValue = state.scale?.y || '';
+    scaleXValue = state.scale?.x || '';
+    scaleYValue = state.scale?.y || '';
 
-  $('scale-input-x').value = scaleXValue;
-  $('scale-input-y').value = scaleYValue;
+    $('scale-input-x').value = scaleXValue;
+    $('scale-input-y').value = scaleYValue;
 
-  stepXValue = state.step?.x || '';
-  stepYValue = state.step?.y || '';
+    stepXValue = state.step?.x || '';
+    stepYValue = state.step?.y || '';
 
-  $('step-input-x').value = stepXValue;
-  $('step-input-y').value = stepYValue;
+    $('step-input-x').value = stepXValue;
+    $('step-input-y').value = stepYValue;
 
-  ticksX.clear();
-  ticksY.clear();
 
-  (state.ticks?.x || []).forEach(v => {
-    const n = Number(v);
-    if (!Number.isNaN(n)) addTickX(n);
-  });
+    experimentalPointsData = (state.experimentalPoints || [])
+      .map(pt => ({ x: Number(pt.x), y: Number(pt.y) }))
+      .filter(pt => !Number.isNaN(pt.x) && !Number.isNaN(pt.y));
 
-  (state.ticks?.y || []).forEach(v => {
-    const n = Number(v);
-    if (!Number.isNaN(n)) addTickY(n);
-  });
+    restoreTrendlineState(trendlineStates[1], state.trendlines?.[1]);
+    restoreTrendlineState(trendlineStates[2], state.trendlines?.[2]);
+    restoreTrendlineState(trendlineStates[3], state.trendlines?.[3]);
+    restoreTrendlineState(trendlineStates[4], state.trendlines?.[4]);
+    restoreTrendlineState(trendlineStates[5], state.trendlines?.[5]);
+    restoreTrendlineState(trendlineStates[6], state.trendlines?.[6]);
 
-  experimentalPointsData = (state.experimentalPoints || [])
-    .map(pt => ({ x: Number(pt.x), y: Number(pt.y) }))
-    .filter(pt => !Number.isNaN(pt.x) && !Number.isNaN(pt.y));
+    const savedCurve = state.curveLine;
+    curveLineState.isVisible = !!savedCurve?.isVisible;
+    curveLineState.isFixed = !!savedCurve?.isFixed;
+    curveLineState.points = (savedCurve?.points || [])
+      .map(pt => ({ x: Number(pt.x), y: Number(pt.y) }))
+      .filter(pt => !Number.isNaN(pt.x) && !Number.isNaN(pt.y))
+      .map(clampAndSnapPoint);
+    curveLineState.dragIndex = null;
+    curveLineState.pointerId = null;
 
-  restoreTrendlineState(trendlineStates[1], state.trendlines?.[1]);
-  restoreTrendlineState(trendlineStates[2], state.trendlines?.[2]);
-  restoreTrendlineState(trendlineStates[3], state.trendlines?.[3]);
-  restoreTrendlineState(trendlineStates[4], state.trendlines?.[4]);
-  restoreTrendlineState(trendlineStates[5], state.trendlines?.[5]);
-  restoreTrendlineState(trendlineStates[6], state.trendlines?.[6]);
+    slopePointsData = [0, 1].map((index) => {
+      const pt = state.slopePoints?.[index];
+      if (!pt) return null;
 
-  const savedCurve = state.curveLine;
-  curveLineState.isVisible = !!savedCurve?.isVisible;
-  curveLineState.isFixed = !!savedCurve?.isFixed;
-  curveLineState.points = (savedCurve?.points || [])
-    .map(pt => ({ x: Number(pt.x), y: Number(pt.y) }))
-    .filter(pt => !Number.isNaN(pt.x) && !Number.isNaN(pt.y))
-    .map(clampAndSnapPoint);
-  curveLineState.dragIndex = null;
-  curveLineState.pointerId = null;
-
-  slopePointsData = [0, 1].map((index) => {
-    const pt = state.slopePoints?.[index];
-    if (!pt) return null;
-
-    const x = Number(pt.x);
-    const y = Number(pt.y);
-    return !Number.isNaN(x) && !Number.isNaN(y) ? { x, y } : null;
-  });
+      const x = Number(pt.x);
+      const y = Number(pt.y);
+      return !Number.isNaN(x) && !Number.isNaN(y) ? { x, y } : null;
+    });
 
     slopePointsData2 = [0, 1].map((index) => {
     const pt = state.slopePoints2?.[index];
@@ -1078,29 +851,49 @@ function applyWorkState(state) {
 
   const savedIntersections = state.intersections || {};
 
-const savedX1 =
-  savedIntersections.x1 !== undefined
-    ? savedIntersections.x1
-    : savedIntersections.x;
+  const savedX1 =
+    savedIntersections.x1 !== undefined
+      ? savedIntersections.x1
+      : savedIntersections.x;
 
-const savedY1 =
-  savedIntersections.y1 !== undefined
-    ? savedIntersections.y1
-    : savedIntersections.y;
+  const savedY1 =
+    savedIntersections.y1 !== undefined
+      ? savedIntersections.y1
+      : savedIntersections.y;
 
-intersectionPointsData1 = {
-  x: readSavedNumber(savedX1),
-  y: readSavedNumber(savedY1)
-};
+  intersectionPointsData1 = {
+    x: readSavedNumber(savedX1),
+    y: readSavedNumber(savedY1)
+  };
 
-intersectionPointsData2 = {
-  x: readSavedNumber(savedIntersections.x2),
-  y: readSavedNumber(savedIntersections.y2)
-};
+  intersectionPointsData2 = {
+    x: readSavedNumber(savedIntersections.x2),
+    y: readSavedNumber(savedIntersections.y2)
+  };
 
-  refreshScaleStepLabels();
-  refreshTicks();
+  /* Sincronizează inputurile Slope și Intercepts cu datele încărcate */
+  const setSlopeInputs = (prefix, point) => {
+    $(`slope-${prefix}-x`).value = point?.x ?? '';
+    $(`slope-${prefix}-y`).value = point?.y ?? '';
+  };
 
+  setSlopeInputs('p1', slopePointsData[0]);
+  setSlopeInputs('p2', slopePointsData[1]);
+  setSlopeInputs('s1', slopePointsData2[0]);
+  setSlopeInputs('s2', slopePointsData2[1]);
+
+  $('intersection-x-value').value =
+    intersectionPointsData1.x ?? '';
+
+  $('intersection-y-value').value =
+    intersectionPointsData1.y ?? '';
+
+  $('intersection-x-value-2').value =
+    intersectionPointsData2.x ?? '';
+
+  $('intersection-y-value-2').value =
+    intersectionPointsData2.y ?? '';
+/*-----------------------------------------------------------------*/
   renderTrendline(1);
   renderTrendline(2);
   renderTrendline(3);
@@ -1113,8 +906,7 @@ intersectionPointsData2 = {
 
   markSaved();
 }
-/*La final vom revizui doar refreshScaleStepLabels() și redrawAllSpecialPoints()
- pentru noul sistem de priorități.
+/*
  ------------------------------------------------------------------------------*/
 
 function buildDefaultFilename() {
@@ -1175,12 +967,16 @@ function setupInputEvents() {
 
   $('step-input-x').addEventListener('input', (e) => {
   stepXValue = e.target.value.trim();
-  refreshScaleStepLabels();
+
+  redrawAllSpecialPoints();
+
 });
 
 $('step-input-y').addEventListener('input', (e) => {
   stepYValue = e.target.value.trim();
-  refreshScaleStepLabels();
+
+ redrawAllSpecialPoints();
+
 });
   $('add-point').addEventListener('click', addDataPoint);
 $('delete-full-point').addEventListener('click', deleteFullDataPoint);
@@ -1195,207 +991,112 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
 /*
 Interacțiunea utilizatorului pentru adăugarea și ștergerea punctelor de pantă
 */
-  $('add-slope-p1').addEventListener('click', () => {
-    const p1x = getNumberFromInput('slope-p1-x');
-    const p1y = getNumberFromInput('slope-p1-y');
 
-    if (!valuesToSvgPoint(p1x, p1y)) {
-      alert('Verifică scara și coordonatele punctului P₁. Punctul trebuie să fie în interiorul graficului.');
-      return;
-    }
+$('add-slope-p1').addEventListener('click', () => {
+  const p1x = getNumberFromInput('slope-p1-x');
+  const p1y = getNumberFromInput('slope-p1-y');
 
-    const oldPoint = slopePointsData[0];
+  if (!valuesToSvgPoint(p1x, p1y)) {
+    alert(
+      'Check the scale and the coordinates of point P₁. ' +
+      'The point must be inside the graph area.'
+    );
+    return;
+  }
 
-    slopePointsData[0] = { x: p1x, y: p1y };
+  slopePointsData[0] = { x: p1x, y: p1y };
+  redrawAllSpecialPoints();
+});
 
-    if (oldPoint) {
-       if (oldPoint.x !== p1x) {
-          pruneUnusedTick('x', oldPoint.x);
-        }
 
-        if (oldPoint.y !== p1y) {
-          pruneUnusedTick('y', oldPoint.y);
-        }
-    }
+ $('add-slope-p2').addEventListener('click', () => {
+  const p2x = getNumberFromInput('slope-p2-x');
+  const p2y = getNumberFromInput('slope-p2-y');
 
-    addTickX(p1x);
-    addTickY(p1y);
+  if (!valuesToSvgPoint(p2x, p2y)) {
+    alert(
+      'Check the scale and the coordinates of point P₂. ' +
+      'The point must be inside the graph area.'
+    );
+    return;
+  }
 
-    refreshTicks();
-    refreshScaleStepLabels();
-    redrawAllSpecialPoints();
-  });
+  slopePointsData[1] = { x: p2x, y: p2y };
+  redrawAllSpecialPoints();
+});
 
-  $('add-slope-p2').addEventListener('click', () => {
-    const p2x = getNumberFromInput('slope-p2-x');
-    const p2y = getNumberFromInput('slope-p2-y');
 
-    if (!valuesToSvgPoint(p2x, p2y)) {
-      alert('Verifică scara și coordonatele punctului P₂. Punctul trebuie să fie în interiorul graficului.');
-      return;
-    }
+$('add-slope-s1').addEventListener('click', () => {
+  const s1x = getNumberFromInput('slope-s1-x');
+  const s1y = getNumberFromInput('slope-s1-y');
 
-    const oldPoint = slopePointsData[1];
+  if (!valuesToSvgPoint(s1x, s1y)) {
+    alert('Check the scale and the coordinates of point S₁. The point must be inside the graph area.');
+    return;
+  }
 
-    slopePointsData[1] = { x: p2x, y: p2y };
+  slopePointsData2[0] = { x: s1x, y: s1y };
+  redrawAllSpecialPoints();
+});
+    
+$('add-slope-s2').addEventListener('click', () => {
+  const s2x = getNumberFromInput('slope-s2-x');
+  const s2y = getNumberFromInput('slope-s2-y');
 
-    if (oldPoint) {
-      if (oldPoint.x !== p2x) {
-         pruneUnusedTick('x', oldPoint.x);
-      }
+  if (!valuesToSvgPoint(s2x, s2y)) {
+    alert('Check the scale and the coordinates of point S₂. The point must be inside the graph area.');
+    return;
+  }
 
-      if (oldPoint.y !== p2y) {
-         pruneUnusedTick('y', oldPoint.y);
-      }
-    }
+  slopePointsData2[1] = { x: s2x, y: s2y };
+  redrawAllSpecialPoints();
+});
+  
 
-    addTickX(p2x);
-    addTickY(p2y);
-
-    refreshTicks();
-    refreshScaleStepLabels();
-    redrawAllSpecialPoints();
-  });
-
-    $('add-slope-s1').addEventListener('click', () => {
-    const s1x = getNumberFromInput('slope-s1-x');
-    const s1y = getNumberFromInput('slope-s1-y');
-
-    if (!valuesToSvgPoint(s1x, s1y)) {
-      alert('Verifică scara și coordonatele punctului S₁. Punctul trebuie să fie în interiorul graficului.');
-      return;
-    }
-
-    const oldPoint = slopePointsData2[0];
-
-    slopePointsData2[0] = { x: s1x, y: s1y };
-
-    if (oldPoint) {
-      if (oldPoint.x !== s1x) {
-        pruneUnusedTick('x', oldPoint.x);
-      }
-
-      if (oldPoint.y !== s1y) {
-        pruneUnusedTick('y', oldPoint.y);
-      }
-    }
-
-    addTickX(s1x);
-    addTickY(s1y);
-
-    refreshTicks();
-    refreshScaleStepLabels();
-    redrawAllSpecialPoints();
-  });
-
-  $('add-slope-s2').addEventListener('click', () => {
-    const s2x = getNumberFromInput('slope-s2-x');
-    const s2y = getNumberFromInput('slope-s2-y');
-
-    if (!valuesToSvgPoint(s2x, s2y)) {
-      alert('Verifică scara și coordonatele punctului S₂. Punctul trebuie să fie în interiorul graficului.');
-      return;
-    }
-
-    const oldPoint = slopePointsData2[1];
-
-    slopePointsData2[1] = { x: s2x, y: s2y };
-
-    if (oldPoint) {
-      if (oldPoint.x !== s2x) {
-        pruneUnusedTick('x', oldPoint.x);
-      }
-
-      if (oldPoint.y !== s2y) {
-        pruneUnusedTick('y', oldPoint.y);
-      }
-    }
-
-    addTickX(s2x);
-    addTickY(s2y);
-
-    refreshTicks();
-    refreshScaleStepLabels();
-    redrawAllSpecialPoints();
-  });
-
-  $('reset-slope-p1').addEventListener('click', () => resetSlopePoint(0));
-  $('reset-slope-p2').addEventListener('click', () => resetSlopePoint(1));
-  $('reset-slope-s1').addEventListener('click', () => resetSlopePoint(0, slopePointsData2, 's'));
-  $('reset-slope-s2').addEventListener('click', () => resetSlopePoint(1, slopePointsData2, 's'));
+$('reset-slope-p1').addEventListener('click', () => resetSlopePoint(0));
+$('reset-slope-p2').addEventListener('click', () => resetSlopePoint(1));
+$('reset-slope-s1').addEventListener('click', () => resetSlopePoint(0, slopePointsData2, 's'));
+$('reset-slope-s2').addEventListener('click', () => resetSlopePoint(1, slopePointsData2, 's'));
   
  /*
  Interacțiunea utilizatorului 
  pentru adăugarea și ștergerea intersecțiilor cu axele
  */
 
-  $('add-intersection-x').addEventListener('click', () => {
+$('add-intersection-x').addEventListener('click', () => {
   const value = getNumberFromInput('intersection-x-value');
 
   if (valueToGridX(value) === null) {
-    alert('Verifică scara OX și valoarea intersecției. Valoarea trebuie să fie în interiorul axei OX.');
+    alert('Check the X-axis scale and the intercept value. The value must be inside the X-axis range.');
     return;
   }
 
-  const oldValue = intersectionPointsData1.x;
-
   intersectionPointsData1.x = value;
-
-  if (oldValue !== null && oldValue !== value) {
-     pruneUnusedTick('x', oldValue);
-  }
-
-  addTickX(value);
-
-  refreshTicks();
-  refreshScaleStepLabels();
   redrawAllSpecialPoints();
 });
+
 
 $('add-intersection-y').addEventListener('click', () => {
   const value = getNumberFromInput('intersection-y-value');
 
   if (valueToGridY(value) === null) {
-    alert('Verifică scara OY și valoarea intersecției. Valoarea trebuie să fie în interiorul axei OY.');
+    alert('Check the Y-axis scale and the intercept value. The value must be inside the Y-axis range.');
     return;
   }
 
-  const oldValue = intersectionPointsData1.y;
-
   intersectionPointsData1.y = value;
-
-  if (oldValue !== null && oldValue !== value) {
-     pruneUnusedTick('y', oldValue);
-  }
-
-  addTickY(value);
-
-  refreshTicks();
-  refreshScaleStepLabels();
   redrawAllSpecialPoints();
 });
-  
+
+
 $('reset-intersection-x').addEventListener('click', () => {
-  const oldValue = intersectionPointsData1.x;
-
   intersectionPointsData1.x = null;
-  if (oldValue !== null) pruneUnusedTick('x', oldValue);
-  clearInput('intersection-x-value');
-
-  refreshTicks();
-  refreshScaleStepLabels();
   redrawAllSpecialPoints();
 });
+
 
 $('reset-intersection-y').addEventListener('click', () => {
-  const oldValue = intersectionPointsData1.y;
-
   intersectionPointsData1.y = null;
-  if (oldValue !== null) pruneUnusedTick('y', oldValue);
-  clearInput('intersection-y-value');
-
-  refreshTicks();
-  refreshScaleStepLabels();
   redrawAllSpecialPoints();
 });
  
@@ -1403,71 +1104,39 @@ $('add-intersection-x-2').addEventListener('click', () => {
   const value = getNumberFromInput('intersection-x-value-2');
 
   if (valueToGridX(value) === null) {
-    alert('Verifică scara OX și valoarea intersecției.');
+    alert('Check the X-axis scale and the intercept value.');
     return;
   }
 
-const oldValue = intersectionPointsData2.x;
-
-intersectionPointsData2.x = value;
-
-if (oldValue !== null && oldValue !== value) {
-  pruneUnusedTick('x', oldValue);
-}
-
-addTickX(value);
-
-  refreshTicks();
-  refreshScaleStepLabels();
+  intersectionPointsData2.x = value;
   redrawAllSpecialPoints();
 });
+
 
 $('add-intersection-y-2').addEventListener('click', () => {
   const value = getNumberFromInput('intersection-y-value-2');
 
   if (valueToGridY(value) === null) {
-    alert('Verifică scara OY și valoarea intersecției.');
+    alert('Check the Y-axis scale and the intercept value.');
     return;
   }
 
-const oldValue = intersectionPointsData2.y;
-
-intersectionPointsData2.y = value;
-
-if (oldValue !== null && oldValue !== value) {
-  pruneUnusedTick('y', oldValue);
-}
-
-addTickY(value);
-
-  refreshTicks();
-  refreshScaleStepLabels();
+  intersectionPointsData2.y = value;
   redrawAllSpecialPoints();
 });
+
 
 $('reset-intersection-x-2').addEventListener('click', () => {
-  const oldValue = intersectionPointsData2.x;
-
   intersectionPointsData2.x = null;
-  if (oldValue !== null) pruneUnusedTick('x', oldValue);
-  clearInput('intersection-x-value-2');
-
-  refreshTicks();
-  refreshScaleStepLabels();
   redrawAllSpecialPoints();
 });
+
 
 $('reset-intersection-y-2').addEventListener('click', () => {
- const oldValue = intersectionPointsData2.y;
-
- intersectionPointsData2.y = null;
- if (oldValue !== null) pruneUnusedTick('y', oldValue);
- clearInput('intersection-y-value-2');
-
-  refreshTicks();
-  refreshScaleStepLabels();
+  intersectionPointsData2.y = null;
   redrawAllSpecialPoints();
 });
+
 // ==========================================================================
 
   $('activate-trendline-1').addEventListener('click', () => {
@@ -1541,7 +1210,7 @@ $('reset-intersection-y-2').addEventListener('click', () => {
       renderTrendline(6);
     }
 
-    updateExtensionButtons();
+      updateExtensionButtons();
   });
 
   $('fix-extensions-2').addEventListener('click', () => {
@@ -1556,7 +1225,7 @@ $('reset-intersection-y-2').addEventListener('click', () => {
       renderTrendline(index);
     });
 
-    updateExtensionButtons();
+      updateExtensionButtons();
   });
 
   $('reset-extensions-2').addEventListener('click', () => {
@@ -1577,7 +1246,7 @@ $('reset-intersection-y-2').addEventListener('click', () => {
       renderTrendline(3);
     }
 
-    updateExtensionButtons();
+      updateExtensionButtons();
   });
 
   $('fix-extensions').addEventListener('click', () => {
@@ -1661,9 +1330,7 @@ $('preview-graph').addEventListener('click', () => {
   document.body.classList.remove('preview-mode');
   });
 }
-/*=====================================================
-De verificat listenerele !!!!!!
-  ===================================================================*/
+/*===================================================================================*/
 
 /*====================================================================
 COORDONARE DINTRE SVG, STARE APLICAȚIE ȘI RENDERE
@@ -2046,7 +1713,6 @@ function setupMagnifierControls() {
 
 function init() {
   svg = $('graph');
-  tickContainer = $('tick-container');
   tickMarksGroup = $('tick-marks');
   scaleStepMarksGroup = $('scale-step-marks');
   experimentalPointsGroup = $('experimental-points');
@@ -2057,8 +1723,8 @@ function init() {
 
   drawGrid();
   drawAxes();
-  refreshTicks();
-  refreshScaleStepLabels();
+ 
+  redrawAllSpecialPoints();
 
   $('axis-label-input-x').value = axisLabels.x;
   $('axis-label-input-y').value = axisLabels.y;
