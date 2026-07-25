@@ -195,24 +195,6 @@ function valuesToSvgPoint(valueX, valueY) {
 }
 // ----------------------------------------------------
 
-/* Utilitare pentru valorile și tickurile axelor */
-
-function isTickXInUse(value) {
-  return experimentalPointsData.some(pt => pt.x === value) ||
-    slopePointsData.some(pt => pt && pt.x === value) ||
-    slopePointsData2.some(pt => pt && pt.x === value) ||
-    intersectionPointsData1.x === value ||
-    intersectionPointsData2.x === value;
-}
-
-function isTickYInUse(value) {
-  return experimentalPointsData.some(pt => pt.y === value) ||
-    slopePointsData.some(pt => pt && pt.y === value) ||
-    slopePointsData2.some(pt => pt && pt.y === value) ||
-    intersectionPointsData1.y === value ||
-    intersectionPointsData2.y === value;
-}
-
 /*=========================================================================
 Golește vechiul strat steps; Construiește tickurile si textele;
 Le pune în coada de priorități pt OX si Oy
@@ -402,8 +384,7 @@ function updateScale(axis, rawValue) {
   experimentalPointsGroup.innerHTML = '';
   resetAllTrendlines();
   resetCurveLine();
-  resetSlopePoints(); 
-
+  
   redrawAllSpecialPoints();
 }
 
