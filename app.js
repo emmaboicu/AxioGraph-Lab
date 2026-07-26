@@ -97,6 +97,9 @@ const MAGNIFIER_AXIS_FILL = 1;
 /* Grosimea zonei văzute de o parte și de alta a axei */
 const MAGNIFIER_CROSS_SOURCE = 14;
 
+/* Compensează borderul pentru alinierea vizuală OX–OY */
+const MAGNIFIER_OY_ALIGNMENT_OFFSET_PX = 4.5;
+
 let magnifierSensorsGroup;
 let magnifierLens;
 let magnifierSvg;
@@ -1380,7 +1383,7 @@ Interacțiunea utilizatorului pentru adăugarea și ștergerea punctelor de pant
   $('preview-graph').addEventListener('click', () => {
 
     hideMagnifierLens();
-    
+
     const button = $('preview-graph');
 
     if (button.classList.contains('is-launching')) return;
@@ -1574,7 +1577,9 @@ function svgPointToContainer(x, y) {
   };
 }
 
-/* Afișează lupa pentru axa și poziția selectată */
+/* ====================================================================
+AFIȘEAZĂ LUPA pentru axa și poziția selectată 
+=======================================================================*/
 function showMagnifierAt(
     axis,
     svgX,
@@ -1597,7 +1602,9 @@ function showMagnifierAt(
     } else if (axis === 'x') {
 
 
-      /* OX: clickul selectează unul dintre cele 4 sferturi */
+      /* -----------------------------------------------------
+      OX: clickul selectează una dintre cele 3 treimi fixe;
+      dragul deplasează apoi continuu fereastra-sursă.---------------------- */
       const zoneWidth =
         gridWidth / MAGNIFIER_OX_ZONES;
 
@@ -1616,8 +1623,8 @@ function showMagnifierAt(
       sourceWidth = zoneWidth;
 
       /*------------------------------------!!!!!!!!!!!!!!!!!
-        80% din zona transversală este deasupra OX,
-        iar 20% rămâne dedesubt pentru tickuri și valori.
+        % din zona transversală este deasupra OX,
+        iar % rămâne dedesubt pentru tickuri și valori.
   --------------------------------------------------------------- */
       sourceMinY =
         y0 - MAGNIFIER_CROSS_SOURCE * 0.75;
@@ -1626,7 +1633,9 @@ function showMagnifierAt(
       
 
     } else {
-      /* OY: clickul selectează una dintre cele 3 treimi */
+      /* ------------------------------------------------------------
+          OY: clickul selectează una dintre cele 3 treimi
+          dragul deplasează apoi continuu fereastra-sursă. ------------------*/
       const zoneHeight =
         gridHeight / MAGNIFIER_OY_ZONES;
 
@@ -1756,6 +1765,8 @@ function showMagnifierAt(
     left =
       axisAnchor.x - actualLensWidth / 2;
 
+  /* Folosește zona originii pentru a păstra lupa OY fixă în timpul dragului. */
+
     const originSourceMinY =
       y0 - sourceHeight +
       MAGNIFIER_CROSS_SOURCE * 0.2;
@@ -1765,8 +1776,8 @@ function showMagnifierAt(
 
     top =
       axisAnchor.y -
-      actualLensHeight * axisPositionInLens+
-      4.5;
+      actualLensHeight * axisPositionInLens
+      + MAGNIFIER_OY_ALIGNMENT_OFFSET_PX;
   }
 
     left = clamp(
@@ -1810,7 +1821,7 @@ function setupMagnifierEngine() {
   function renderPendingMagnifierDrag() {
     animationFrameId = null;
 
-    if (!dragState || !pendingDragPoint) return;
+    if (!magnifierActive || !dragState || !pendingDragPoint) return;
 
     const point = pendingDragPoint;
     pendingDragPoint = null;
@@ -1929,6 +1940,7 @@ function setupMagnifierEngine() {
 
     sensor.addEventListener('pointermove', (event) => {
       if (
+        !magnifierActive ||
         !dragState ||
         dragState.pointerId !== event.pointerId
       ) {
@@ -1976,6 +1988,10 @@ function setupMagnifierEngine() {
 
     sensor.addEventListener(
       'pointercancel',
+      stopMagnifierDrag
+    );
+    sensor.addEventListener(
+      'lostpointercapture',
       stopMagnifierDrag
     );
 
