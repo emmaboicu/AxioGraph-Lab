@@ -85,17 +85,17 @@ Declarațiile lupei — vor fi găsite în init  MAGNIFIER SOURCE  DISPARE
 
 let magnifierActive = false;
 /* Împărțirea fixă a axelor pentru Detail View */
-const MAGNIFIER_OX_ZONES = 4;
+const MAGNIFIER_OX_ZONES = 3;
 const MAGNIFIER_OY_ZONES = 3;
 
 /*
   Procentul din lungimea vizibilă a axei ocupat de lupă:
   1 = 100%, 0.9 = 90%, 0.82 = 82%. SINGURUL CARE SE POATE REGLA.
 */
-const MAGNIFIER_AXIS_FILL = 0.82;
+const MAGNIFIER_AXIS_FILL = 1;
 
 /* Grosimea zonei văzute de o parte și de alta a axei */
-const MAGNIFIER_CROSS_SOURCE = 20;
+const MAGNIFIER_CROSS_SOURCE = 14;
 
 let magnifierSensorsGroup;
 let magnifierLens;
@@ -1378,6 +1378,9 @@ Interacțiunea utilizatorului pentru adăugarea și ștergerea punctelor de pant
  // Listenerul pentru Butonul de preview grafic
 
   $('preview-graph').addEventListener('click', () => {
+
+    hideMagnifierLens();
+    
     const button = $('preview-graph');
 
     if (button.classList.contains('is-launching')) return;
@@ -1572,14 +1575,28 @@ function svgPointToContainer(x, y) {
 }
 
 /* Afișează lupa pentru axa și poziția selectată */
-function showMagnifierAt(axis, svgX, svgY) {
-
+function showMagnifierAt(
+    axis,
+    svgX,
+    svgY,
+    sourceWindow = null
+    ) 
+{
     let sourceMinX;
     let sourceMinY;
     let sourceWidth;
     let sourceHeight;
 
-    if (axis === 'x') {
+    if (sourceWindow) {
+      ({
+        sourceMinX,
+        sourceMinY,
+        sourceWidth,
+        sourceHeight
+      } = sourceWindow);
+    } else if (axis === 'x') {
+
+
       /* OX: clickul selectează unul dintre cele 4 sferturi */
       const zoneWidth =
         gridWidth / MAGNIFIER_OX_ZONES;
@@ -1598,23 +1615,15 @@ function showMagnifierAt(axis, svgX, svgY) {
       sourceMinX = x0 + zoneIndex * zoneWidth;
       sourceWidth = zoneWidth;
 
-      /* Zonele apropiate de origine includ un pătrat în plus, din zona opusă */
-      if (zoneIndex === 1) {
-        sourceMinX += 10;
-      }
-
-      if (zoneIndex === 2) {
-        sourceMinX -= 10;
-      }
-
-      /*
+      /*------------------------------------!!!!!!!!!!!!!!!!!
         80% din zona transversală este deasupra OX,
         iar 20% rămâne dedesubt pentru tickuri și valori.
-      */
+  --------------------------------------------------------------- */
       sourceMinY =
-        y0 - MAGNIFIER_CROSS_SOURCE * 0.8;
+        y0 - MAGNIFIER_CROSS_SOURCE * 0.75;
 
       sourceHeight = MAGNIFIER_CROSS_SOURCE;
+      
 
     } else {
       /* OY: clickul selectează una dintre cele 3 treimi */
@@ -1747,9 +1756,17 @@ function showMagnifierAt(axis, svgX, svgY) {
     left =
       axisAnchor.x - actualLensWidth / 2;
 
+    const originSourceMinY =
+      y0 - sourceHeight +
+      MAGNIFIER_CROSS_SOURCE * 0.2;
+
+    const axisPositionInLens =
+      (y0 - originSourceMinY) / sourceHeight;
+
     top =
-      gridTopLeft.y +
-      (displayedGridHeight - actualLensHeight) / 2;
+      axisAnchor.y -
+      actualLensHeight * axisPositionInLens+
+      4.5;
   }
 
     left = clamp(
@@ -1767,7 +1784,15 @@ function showMagnifierAt(axis, svgX, svgY) {
     magnifierLens.style.left = left + 'px';
     magnifierLens.style.top = top + 'px';
 
+  return {
+    sourceMinX,
+    sourceMinY,
+    sourceWidth,
+    sourceHeight
+  };  
 }
+
+/*==========================showMagnifierAt()============================*/
 
 /* Creează zonele largi de click/tap din jurul axelor */
 function setupMagnifierEngine() {
@@ -1776,6 +1801,72 @@ function setupMagnifierEngine() {
   magnifierSvg = $('magnifier-svg');
   
   magnifierSensorsGroup.innerHTML = '';
+
+  let dragState = null;
+  let pendingDragPoint = null;
+  let animationFrameId = null;
+
+/*=====================Motorul mișcării======================*/
+  function renderPendingMagnifierDrag() {
+    animationFrameId = null;
+
+    if (!dragState || !pendingDragPoint) return;
+
+    const point = pendingDragPoint;
+    pendingDragPoint = null;
+
+    const currentCoord =
+      dragState.axis === 'x'
+        ? point.x
+        : point.y;
+
+    const delta =
+      currentCoord - dragState.startCoord;
+
+    const sourceWindow = {
+      sourceMinX: dragState.sourceMinX,
+      sourceMinY: dragState.sourceMinY,
+      sourceWidth: dragState.sourceWidth,
+      sourceHeight: dragState.sourceHeight
+    };
+
+    if (dragState.axis === 'x') {
+      sourceWindow.sourceMinX = clamp(
+        dragState.sourceMinX + delta,
+        x0,
+        x0 + gridWidth - dragState.sourceWidth
+      );
+    } else {
+      const maximumSourceMinY =
+        y0 -
+        dragState.sourceHeight +
+        MAGNIFIER_CROSS_SOURCE * 0.2;
+
+      sourceWindow.sourceMinY = clamp(
+        dragState.sourceMinY + delta,
+        y0 - gridHeight,
+        maximumSourceMinY
+      );
+    }
+
+    showMagnifierAt(
+      dragState.axis,
+      point.x,
+      point.y,
+      sourceWindow
+    );
+  }
+
+  function scheduleMagnifierDrag(point) {
+    pendingDragPoint = point;
+
+    if (animationFrameId !== null) return;
+
+    animationFrameId = requestAnimationFrame(
+      renderPendingMagnifierDrag
+    );
+  }
+/*----------------------------------------------------------------*/
 
   function createAxisSensor(axis) {
     const sensor = document.createElementNS(
@@ -1805,27 +1896,88 @@ function setupMagnifierEngine() {
       Oprim evenimentele înainte să ajungă la instrumentele
       care desenează sau mută liniile pe grafic.
     */
+
+    sensor.style.touchAction = 'none';
+
     sensor.addEventListener('pointerdown', (event) => {
-      event.stopPropagation();
-    });
+      if (!magnifierActive) return;
 
-    sensor.addEventListener('pointerup', (event) => {
-      event.stopPropagation();
-    });
-
-    sensor.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
 
-      if (!magnifierActive) return;
-
       const point = getSvgPoint(event);
 
-      showMagnifierAt(axis, point.x, point.y);
+      const sourceWindow = showMagnifierAt(
+        axis,
+        point.x,
+        point.y
+      );
 
-      /* Instrucțiunea nu mai este necesară după primul click valid */
+      dragState = {
+        axis,
+        pointerId: event.pointerId,
+        startCoord: axis === 'x' ? point.x : point.y,
+        ...sourceWindow
+      };
+
+      pendingDragPoint = null;
+
+      sensor.setPointerCapture(event.pointerId);
+
       $('magnifier-tip').hidden = true;
     });
+
+    sensor.addEventListener('pointermove', (event) => {
+      if (
+        !dragState ||
+        dragState.pointerId !== event.pointerId
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      scheduleMagnifierDrag(
+        getSvgPoint(event)
+      );
+    });
+
+    function stopMagnifierDrag(event) {
+      if (
+        !dragState ||
+        dragState.pointerId !== event.pointerId
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      pendingDragPoint = getSvgPoint(event);
+
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+
+      renderPendingMagnifierDrag();
+      dragState = null;
+
+      if (sensor.hasPointerCapture(event.pointerId)) {
+        sensor.releasePointerCapture(event.pointerId);
+      }
+    }
+
+    sensor.addEventListener(
+      'pointerup',
+      stopMagnifierDrag
+    );
+
+    sensor.addEventListener(
+      'pointercancel',
+      stopMagnifierDrag
+    );
 
     magnifierSensorsGroup.appendChild(sensor);
   }
@@ -1837,6 +1989,7 @@ function setupMagnifierEngine() {
   magnifierSensorsGroup.setAttribute('pointer-events', 'none');
   hideMagnifierLens();
 }
+/*====================================================================*/
 
 // Funcția pt starea de magnifier și off
 function setupMagnifierControls() {

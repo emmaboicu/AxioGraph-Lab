@@ -106,7 +106,7 @@ function getMagnifierGridStroke(index, normalScale) {
         ? gridMediumStroke
         : gridFineStroke;
 
-  return baseStroke * normalScale;
+  return baseStroke * normalScale * 1.5;
 }
 
 /* Desenează numai porțiunea locală de foaie milimetrică */

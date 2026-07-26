@@ -440,7 +440,7 @@ button:disabled {
   border: 1px solid #1f1a60;
   border-radius: 6px;
   box-shadow: 0 6px 16px rgba(31, 26, 96, 0.22);
-}
+  }
 
 /* Lupa pentru OX: lată și joasă */
 .magnifier-lens.is-x {
