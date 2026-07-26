@@ -493,12 +493,14 @@ button:disabled {
   border: 1.5px solid #b8c0cc;
   background-color: white;
   flex-direction: row;
-  gap: 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 3px 8px 5px;
 }
 
 .card-2-col {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -510,7 +512,25 @@ button:disabled {
   letter-spacing: 0.2px;
 }
 .card-2 .input-label {
-  width: 80px;
+  width: 62px;
+}
+
+.btn-apply-scale {
+  background-color: #ffffff;
+  color: #1f1a60;
+  border: 1.5px solid #c4b5fd;
+  box-shadow: 0 0 4px 0.5px rgba(167, 139, 250, 0.65);
+  margin-top: 14px;
+  padding: 2px 6px;
+  position: relative;
+  left: -10px;
+}
+
+.btn-apply-scale:hover:not(:disabled) {
+  background-color: #f5f3ff;
+  color: #0008ff;
+  border-color: #a78bfa;
+  box-shadow: 0 0 6px 1px rgba(167, 139, 250, 0.8);
 }
 
 .icon-square {
@@ -573,7 +593,8 @@ button:disabled {
   filter: none;
 }
 /* Animație pentru butonul de adăugare punct +P */
-.btn-p-plus.is-popping {
+.btn-p-plus.is-popping,
+.btn-apply-scale.is-popping {
   animation: point-button-pop 0.36s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 

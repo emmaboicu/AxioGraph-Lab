@@ -146,6 +146,28 @@ export function valueToGridY(value, scaleYValue) {
   return y;
 }
 
+/* Transformă poziția SVG de pe OX în valoare matematică */
+export function gridXToValue(svgX, scaleXValue) {
+  const scaleX = parseFloat(scaleXValue);
+  const x = Number(svgX);
+
+  if (!Number.isFinite(scaleX) || scaleX === 0) return null;
+  if (!Number.isFinite(x)) return null;
+
+  return ((x - originX) / 10) * scaleX;
+}
+
+/* Transformă poziția SVG de pe OY în valoare matematică */
+export function gridYToValue(svgY, scaleYValue) {
+  const scaleY = parseFloat(scaleYValue);
+  const y = Number(svgY);
+
+  if (!Number.isFinite(scaleY) || scaleY === 0) return null;
+  if (!Number.isFinite(y)) return null;
+
+  return ((y0 - y) / 10) * scaleY;
+}
+
 export function valuesToSvgPoint(valueX, valueY, scaleXValue, scaleYValue) {
   const x = valueToGridX(valueX, scaleXValue);
   const y = valueToGridY(valueY, scaleYValue);
@@ -154,3 +176,4 @@ export function valuesToSvgPoint(valueX, valueY, scaleXValue, scaleYValue) {
 
   return { x, y };
 }
+

@@ -6,15 +6,9 @@ import {
   gridWidth,
   gridHeight,
   originX,
-  gridFineStroke,
-  gridMediumStroke,
-  gridMajorStroke,
-  axisStroke,
-  axisTickStroke,
   coordGuideStroke,
   clamp,
   clampPointToGrid,
-  snapPointToGrid,
   clampAndSnapPoint,
   drawGrid,
   drawAxes,
@@ -59,6 +53,9 @@ function $(id) {
   return document.getElementById(id);
 }
 
+import {
+  remapTrendlinesForScaleChange
+} from './scaleUpdate.js';
 
 let svg;
 let tickMarksGroup;
@@ -135,6 +132,8 @@ const trendlineStates = {
   6: { isVisible: false, isFixed: false, p1: null, p2: null, dragMode: null, pointerId: null, lastPoint: null }
 };
 
+const TRENDLINE_OX_MARGIN = 20;
+
 let trendlineConfigs = {};
 
 const curveLineState = {
@@ -168,11 +167,6 @@ function getSvgPoint(evt) {
   pt.x = evt.clientX;
   pt.y = evt.clientY;
   return pt.matrixTransform(svg.getScreenCTM().inverse());
-}
-
-function clearInput(id) {
-  const el = $(id);
-  if (el) el.value = '';
 }
 
 function getNumberFromInput(id) {
@@ -301,7 +295,7 @@ function redrawExperimentalPoints() {
     }
   });
 
-  experimentalPointsData = uniquePoints.filter((pt) => valuesToSvgPoint(pt.x, pt.y));
+  experimentalPointsData = uniquePoints;
   experimentalPointsData.forEach((pt) => drawExperimentalPoint(
     pt.x,
     pt.y,
@@ -373,21 +367,95 @@ function deleteFullDataPoint() {
 }
 /*=====================================================================*/
 
-/* TREBUIE RESCRISĂ IN SCALEUPDATE.JS DE AICI DISPARE*/
-function updateScale(axis, rawValue) {
-  const trimmed = rawValue.trim();
-  if (trimmed !== '' && Number.isNaN(parseFloat(trimmed))) return;
+/* ========================================================================
+Schimbă scara și păstrează geometria TrendLines și toate punctele desenate
+===========================================================================*/
+/* Aplică simultan noile scări OX și OY */
+function applyScales() {
+  const newScaleXText =
+    $('scale-input-x').value.trim();
 
-  if (axis === 'x') scaleXValue = trimmed;
-  else scaleYValue = trimmed;
+  const newScaleYText =
+    $('scale-input-y').value.trim();
 
-  experimentalPointsGroup.innerHTML = '';
-  resetAllTrendlines();
+  const newScales = {
+    x: Number(newScaleXText),
+    y: Number(newScaleYText)
+  };
+
+  const newScalesAreValid =
+    newScaleXText !== '' &&
+    newScaleYText !== '' &&
+    Number.isFinite(newScales.x) &&
+    newScales.x > 0 &&
+    Number.isFinite(newScales.y) &&
+    newScales.y > 0;
+
+  if (!newScalesAreValid) {
+    alert(
+      'Enter valid positive values for both X Scale and Y Scale.'
+    );
+    return;
+  }
+
+  /* Confirmare vizuală pentru aplicarea scării */
+  const button = $('apply-scale');
+
+  button.classList.remove('is-popping');
+
+  button.addEventListener(
+    'animationend',
+    () => button.classList.remove('is-popping'),
+    { once: true }
+  );
+
+  void button.offsetWidth;
+  button.classList.add('is-popping');
+
+  const oldScales = {
+    x: scaleXValue,
+    y: scaleYValue
+  };
+
+  const oldScaleX = Number(scaleXValue);
+  const oldScaleY = Number(scaleYValue);
+
+  const scalesAreUnchanged =
+    Number.isFinite(oldScaleX) &&
+    oldScaleX > 0 &&
+    Number.isFinite(oldScaleY) &&
+    oldScaleY > 0 &&
+    Math.abs(oldScaleX - newScales.x) < 1e-9 &&
+    Math.abs(oldScaleY - newScales.y) < 1e-9;
+
+  if (scalesAreUnchanged) {
+    return;
+  }
+
+  /* Remapează simultan OX și OY pentru TrendLines */
+  remapTrendlinesForScaleChange({
+    oldScales,
+    newScales,
+    trendlineStates,
+    oxMargin: TRENDLINE_OX_MARGIN
+  });
+
+  /* Memorează noile scări */
+  scaleXValue = newScaleXText;
+  scaleYValue = newScaleYText;
+
+  resetTrendline(2);
+  resetTrendline(3);
+  resetTrendline(5);
+  resetTrendline(6);
+
   resetCurveLine();
-  
+
+  renderTrendline(1);
+  renderTrendline(4);
+
   redrawAllSpecialPoints();
 }
-
 
 /* =================================================================
 Curăță stratul Slope și desenează o singură reprezentare
@@ -943,24 +1011,24 @@ function loadWorkFromFile(event) {
    ================================================== ================*/
 
 function setupInputEvents() {
-  $('scale-input-x').addEventListener('input', (e) => updateScale('x', e.target.value));
-  $('scale-input-y').addEventListener('input', (e) => updateScale('y', e.target.value));
 
-  $('step-input-x').addEventListener('input', (e) => {
-  stepXValue = e.target.value.trim();
+  $('apply-scale').addEventListener('click', applyScales);
+  
+  $('step-input-x').addEventListener('input', (e) => {stepXValue = e.target.value.trim();
 
   redrawAllSpecialPoints();
+  });
 
-});
+  $('step-input-y').addEventListener('input', (e) => {stepYValue = e.target.value.trim();
 
-$('step-input-y').addEventListener('input', (e) => {
-  stepYValue = e.target.value.trim();
+  redrawAllSpecialPoints();
+  });
 
- redrawAllSpecialPoints();
 
-});
   $('add-point').addEventListener('click', addDataPoint);
-$('delete-full-point').addEventListener('click', deleteFullDataPoint);
+
+  $('delete-full-point').addEventListener('click', deleteFullDataPoint);
+
   $('point-input-x').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') $('add-point').click();
   });
@@ -973,150 +1041,150 @@ $('delete-full-point').addEventListener('click', deleteFullDataPoint);
 Interacțiunea utilizatorului pentru adăugarea și ștergerea punctelor de pantă
 */
 
-$('add-slope-p1').addEventListener('click', () => {
-  const p1x = getNumberFromInput('slope-p1-x');
-  const p1y = getNumberFromInput('slope-p1-y');
+  $('add-slope-p1').addEventListener('click', () => {
+    const p1x = getNumberFromInput('slope-p1-x');
+    const p1y = getNumberFromInput('slope-p1-y');
 
-  if (!valuesToSvgPoint(p1x, p1y)) {
-    alert(
-      'Check the scale and the coordinates of point P₁. ' +
-      'The point must be inside the graph area.'
-    );
-    return;
-  }
+    if (!valuesToSvgPoint(p1x, p1y)) {
+      alert(
+        'Check the scale and the coordinates of point P₁. ' +
+        'The point must be inside the graph area.'
+      );
+      return;
+    }
 
-  slopePointsData[0] = { x: p1x, y: p1y };
-  redrawAllSpecialPoints();
-});
-
-
- $('add-slope-p2').addEventListener('click', () => {
-  const p2x = getNumberFromInput('slope-p2-x');
-  const p2y = getNumberFromInput('slope-p2-y');
-
-  if (!valuesToSvgPoint(p2x, p2y)) {
-    alert(
-      'Check the scale and the coordinates of point P₂. ' +
-      'The point must be inside the graph area.'
-    );
-    return;
-  }
-
-  slopePointsData[1] = { x: p2x, y: p2y };
-  redrawAllSpecialPoints();
-});
+    slopePointsData[0] = { x: p1x, y: p1y };
+    redrawAllSpecialPoints();
+  });
 
 
-$('add-slope-s1').addEventListener('click', () => {
-  const s1x = getNumberFromInput('slope-s1-x');
-  const s1y = getNumberFromInput('slope-s1-y');
+  $('add-slope-p2').addEventListener('click', () => {
+    const p2x = getNumberFromInput('slope-p2-x');
+    const p2y = getNumberFromInput('slope-p2-y');
 
-  if (!valuesToSvgPoint(s1x, s1y)) {
-    alert('Check the scale and the coordinates of point S₁. The point must be inside the graph area.');
-    return;
-  }
+    if (!valuesToSvgPoint(p2x, p2y)) {
+      alert(
+        'Check the scale and the coordinates of point P₂. ' +
+        'The point must be inside the graph area.'
+      );
+      return;
+    }
 
-  slopePointsData2[0] = { x: s1x, y: s1y };
-  redrawAllSpecialPoints();
-});
+    slopePointsData[1] = { x: p2x, y: p2y };
+    redrawAllSpecialPoints();
+  });
+
+
+  $('add-slope-s1').addEventListener('click', () => {
+    const s1x = getNumberFromInput('slope-s1-x');
+    const s1y = getNumberFromInput('slope-s1-y');
+
+    if (!valuesToSvgPoint(s1x, s1y)) {
+      alert('Check the scale and the coordinates of point S₁. The point must be inside the graph area.');
+      return;
+    }
+
+    slopePointsData2[0] = { x: s1x, y: s1y };
+    redrawAllSpecialPoints();
+  });
     
-$('add-slope-s2').addEventListener('click', () => {
-  const s2x = getNumberFromInput('slope-s2-x');
-  const s2y = getNumberFromInput('slope-s2-y');
+  $('add-slope-s2').addEventListener('click', () => {
+    const s2x = getNumberFromInput('slope-s2-x');
+    const s2y = getNumberFromInput('slope-s2-y');
 
-  if (!valuesToSvgPoint(s2x, s2y)) {
-    alert('Check the scale and the coordinates of point S₂. The point must be inside the graph area.');
-    return;
-  }
+    if (!valuesToSvgPoint(s2x, s2y)) {
+      alert('Check the scale and the coordinates of point S₂. The point must be inside the graph area.');
+      return;
+    }
 
-  slopePointsData2[1] = { x: s2x, y: s2y };
-  redrawAllSpecialPoints();
-});
+    slopePointsData2[1] = { x: s2x, y: s2y };
+    redrawAllSpecialPoints();
+  });
   
 
-$('reset-slope-p1').addEventListener('click', () => resetSlopePoint(0));
-$('reset-slope-p2').addEventListener('click', () => resetSlopePoint(1));
-$('reset-slope-s1').addEventListener('click', () => resetSlopePoint(0, slopePointsData2, 's'));
-$('reset-slope-s2').addEventListener('click', () => resetSlopePoint(1, slopePointsData2, 's'));
+  $('reset-slope-p1').addEventListener('click', () => resetSlopePoint(0));
+  $('reset-slope-p2').addEventListener('click', () => resetSlopePoint(1));
+  $('reset-slope-s1').addEventListener('click', () => resetSlopePoint(0, slopePointsData2 ));
+  $('reset-slope-s2').addEventListener('click', () => resetSlopePoint(1, slopePointsData2 ));
   
  /*
  Interacțiunea utilizatorului 
  pentru adăugarea și ștergerea intersecțiilor cu axele
  */
 
-$('add-intersection-x').addEventListener('click', () => {
-  const value = getNumberFromInput('intersection-x-value');
+  $('add-intersection-x').addEventListener('click', () => {
+    const value = getNumberFromInput('intersection-x-value');
 
-  if (valueToGridX(value) === null) {
-    alert('Check the X-axis scale and the intercept value. The value must be inside the X-axis range.');
-    return;
-  }
+    if (valueToGridX(value) === null) {
+      alert('Check the X-axis scale and the intercept value. The value must be inside the X-axis range.');
+      return;
+    }
 
-  intersectionPointsData1.x = value;
-  redrawAllSpecialPoints();
-});
-
-
-$('add-intersection-y').addEventListener('click', () => {
-  const value = getNumberFromInput('intersection-y-value');
-
-  if (valueToGridY(value) === null) {
-    alert('Check the Y-axis scale and the intercept value. The value must be inside the Y-axis range.');
-    return;
-  }
-
-  intersectionPointsData1.y = value;
-  redrawAllSpecialPoints();
-});
+    intersectionPointsData1.x = value;
+    redrawAllSpecialPoints();
+  });
 
 
-$('reset-intersection-x').addEventListener('click', () => {
-  intersectionPointsData1.x = null;
-  redrawAllSpecialPoints();
-});
+  $('add-intersection-y').addEventListener('click', () => {
+    const value = getNumberFromInput('intersection-y-value');
+
+    if (valueToGridY(value) === null) {
+      alert('Check the Y-axis scale and the intercept value. The value must be inside the Y-axis range.');
+      return;
+    }
+
+    intersectionPointsData1.y = value;
+    redrawAllSpecialPoints();
+  });
 
 
-$('reset-intersection-y').addEventListener('click', () => {
-  intersectionPointsData1.y = null;
-  redrawAllSpecialPoints();
-});
- 
-$('add-intersection-x-2').addEventListener('click', () => {
-  const value = getNumberFromInput('intersection-x-value-2');
-
-  if (valueToGridX(value) === null) {
-    alert('Check the X-axis scale and the intercept value.');
-    return;
-  }
-
-  intersectionPointsData2.x = value;
-  redrawAllSpecialPoints();
-});
+  $('reset-intersection-x').addEventListener('click', () => {
+    intersectionPointsData1.x = null;
+    redrawAllSpecialPoints();
+  });
 
 
-$('add-intersection-y-2').addEventListener('click', () => {
-  const value = getNumberFromInput('intersection-y-value-2');
+  $('reset-intersection-y').addEventListener('click', () => {
+    intersectionPointsData1.y = null;
+    redrawAllSpecialPoints();
+  });
+  
+  $('add-intersection-x-2').addEventListener('click', () => {
+    const value = getNumberFromInput('intersection-x-value-2');
 
-  if (valueToGridY(value) === null) {
-    alert('Check the Y-axis scale and the intercept value.');
-    return;
-  }
+    if (valueToGridX(value) === null) {
+      alert('Check the X-axis scale and the intercept value.');
+      return;
+    }
 
-  intersectionPointsData2.y = value;
-  redrawAllSpecialPoints();
-});
-
-
-$('reset-intersection-x-2').addEventListener('click', () => {
-  intersectionPointsData2.x = null;
-  redrawAllSpecialPoints();
-});
+    intersectionPointsData2.x = value;
+    redrawAllSpecialPoints();
+  });
 
 
-$('reset-intersection-y-2').addEventListener('click', () => {
-  intersectionPointsData2.y = null;
-  redrawAllSpecialPoints();
-});
+  $('add-intersection-y-2').addEventListener('click', () => {
+    const value = getNumberFromInput('intersection-y-value-2');
+
+    if (valueToGridY(value) === null) {
+      alert('Check the Y-axis scale and the intercept value.');
+      return;
+    }
+
+    intersectionPointsData2.y = value;
+    redrawAllSpecialPoints();
+  });
+
+
+  $('reset-intersection-x-2').addEventListener('click', () => {
+    intersectionPointsData2.x = null;
+    redrawAllSpecialPoints();
+  });
+
+
+  $('reset-intersection-y-2').addEventListener('click', () => {
+    intersectionPointsData2.y = null;
+    redrawAllSpecialPoints();
+  });
 
 // ==========================================================================
 
@@ -1293,18 +1361,18 @@ $('reset-intersection-y-2').addEventListener('click', () => {
 
  // Listenerul pentru Butonul de preview grafic
 
-$('preview-graph').addEventListener('click', () => {
-  const button = $('preview-graph');
+  $('preview-graph').addEventListener('click', () => {
+    const button = $('preview-graph');
 
-  if (button.classList.contains('is-launching')) return;
+    if (button.classList.contains('is-launching')) return;
 
-  button.classList.add('is-launching');
+    button.classList.add('is-launching');
 
-  setTimeout(() => {
-    document.body.classList.add('preview-mode');
-    button.classList.remove('is-launching');
-  }, 1450);
-});
+    setTimeout(() => {
+      document.body.classList.add('preview-mode');
+      button.classList.remove('is-launching');
+    }, 1450);
+  });
 
  // Exit preview
   $('exit-preview').addEventListener('click', () => {
@@ -1352,6 +1420,7 @@ function setupPointerEvents() {
       evt.preventDefault();
 
       const currentPoint = clampAndSnapPoint(getSvgPoint(evt));
+
       curveLineState.points[curveLineState.dragIndex] = currentPoint;
       renderCurveLine();
       markDirty();
@@ -1366,6 +1435,16 @@ function setupPointerEvents() {
       evt.preventDefault();
       const currentPoint = clampPointToGrid(getSvgPoint(evt));
 
+      if (
+        (index === 1 || index === 4) &&
+        (state.dragMode === 'handle1' || state.dragMode === 'handle2')
+      ) {
+        currentPoint.y = Math.min(
+          currentPoint.y,
+          y0 - TRENDLINE_OX_MARGIN
+        );
+      }
+
       if (state.dragMode === 'handle1' && (index === 1 || index === 4)) {
         state.p1 = currentPoint;
       } else if (state.dragMode === 'handle2') {
@@ -1377,7 +1456,11 @@ function setupPointerEvents() {
         const minDx = x0 - Math.min(state.p1.x, state.p2.x);
         const maxDx = (x0 + gridWidth) - Math.max(state.p1.x, state.p2.x);
         const minDy = (y0 - gridHeight) - Math.min(state.p1.y, state.p2.y);
-        const maxDy = y0 - Math.max(state.p1.y, state.p2.y);
+
+       const maxDy =
+          y0 -
+          TRENDLINE_OX_MARGIN -
+          Math.max(state.p1.y, state.p2.y);
 
         const dx = clamp(rawDx, minDx, maxDx);
         const dy = clamp(rawDy, minDy, maxDy);
