@@ -19,7 +19,7 @@
     <!-- ZONA STÂNGĂ: hârtia milimetrică reală AxioGraph -->
     <div id="sheet-column" class="graph-area">
       <div id="a4-container">
-        <svg id="graph" xmlns="http://www.w3.org/2000/svg" viewBox="-4 0 264 270" preserveAspectRatio="xMinYMin meet">
+        <svg id="graph" xmlns="http://www.w3.org/2000/svg" viewBox="12 -3 260 266" preserveAspectRatio="xMinYMin meet">
           <defs>
             <marker id="arrow-head" viewBox="0 0 6 6" refX="0" refY="3" markerWidth="4" markerHeight="4" orient="auto">
               <path d="M 0 0 L 6 3 L 0 6 z" fill="#00008B" />
@@ -43,8 +43,11 @@
           <g id="slope-points"></g>
           <g id="intersection-points"></g>
 
-          <text id="axis-label-x" class="axis-label-svg" x="252" y="264" text-anchor="end"></text>
-          <text id="axis-label-y" class="axis-label-svg" x="4" y="8" text-anchor="end" transform="rotate(-90 4 8)"></text>
+          <text id="axis-label-x" class="axis-label-svg"
+            x="260" y="252" text-anchor="start"></text>
+
+            <text id="axis-label-y" class="axis-label-svg"
+            x="135" y="6" text-anchor="middle"></text>
         
           <!-- Zonele invizibile pentru click/tap lângă axe -->
           <g id="magnifier-sensors" pointer-events="none"></g>

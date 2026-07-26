@@ -59,7 +59,7 @@ body {
 /* Etichete axe peste SVG */
 .axis-label-svg {
   font-family: "Inter", sans-serif;
-  font-size: 5px;
+  font-size: 3.4px;
   font-weight: 700;
   fill: #00008b;
   pointer-events: none;
@@ -67,10 +67,10 @@ body {
 
 /* Panou dreapta */
 .control-panel {
-  flex: 0 0 350px;
-  width: 350px;
-  min-width: 350px;
-  max-width: 350px;
+  flex: 0 0 260px;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
   height: 100vh;
   background-color: #ffffff;
   border-left: 1px solid #ccc;
@@ -1378,7 +1378,7 @@ body.preview-mode #sheet-column {
 body.preview-mode #a4-container {
   width: min(calc(100vw - 8px), 96vh);
   height: auto;
-  aspect-ratio: 264 / 270;
+  aspect-ratio: 260 / 266;
   flex-shrink: 0;
 }
 
@@ -1414,9 +1414,3 @@ body.preview-mode #exit-preview:active {
 }
 
 
-/* TEMPORAR — test lățime, șterge după ce termini */
-.control-panel {
-  width: 260px !important;
-  min-width: 260px !important;
-  max-width: 260px !important;
-}
