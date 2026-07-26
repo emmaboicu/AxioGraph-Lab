@@ -71,6 +71,7 @@ export function queueAxisMarker({
   coord,
   text,
   tick,
+  alternateText = null,
   priority
 }) {
   axisMarkerCandidates.push({
@@ -78,6 +79,7 @@ export function queueAxisMarker({
     axis,
     coord,
     text,
+    alternateText,
     tick,
     priority
   });
@@ -174,34 +176,35 @@ export function addAxisMarker({
    ====================================================*/
 
 export function renderAxisMarkers(measurementGroup) {
-  const acceptedTexts = {
-    x: [],
-    y: []
-  };
+    const acceptedTexts = {
+      x: [],
+      y: []
+    };
 
-  const acceptedTicks = {
-    x: [],
-    y: []
-  };
+    const acceptedTicks = {
+      x: [],
+      y: []
+    };
 
   /*
     Valorile importante sunt analizate primele.
     La priorități egale se păstrează ordinea inițială.
   */
-  const sortedCandidates = [...axisMarkerCandidates]
-    .sort((first, second) =>
-      second.priority - first.priority
-    );
+    const sortedCandidates = [...axisMarkerCandidates]
+      .sort((first, second) =>
+        second.priority - first.priority
+      );
 
-  sortedCandidates.forEach((candidate) => {
-    const {
-      group,
-      axis,
-      coord,
-      text,
-      tick,
-      priority
-    } = candidate;
+    sortedCandidates.forEach((candidate) => {
+      const {
+        group,
+        axis,
+        coord,
+        text,
+        alternateText,
+        tick,
+        priority
+      } = candidate;
 
     /*
       Textul este pus temporar într-un grup SVG vizibil,
@@ -237,27 +240,57 @@ export function renderAxisMarkers(measurementGroup) {
         axisLabelBoxesOverlap(textBox, acceptedTextBox)
     );
 
-    /*
-      Dacă tickul nu se suprapune, este afișat.
-    */
+   /* rezolvare conflicte la afișare*/
+    let selectedText = text;
+    let selectedTextBox = textBox;
+    let canShowText = !textConflict;
+
+    if (!tickConflict && textConflict && alternateText) {
+      measurementGroup.appendChild(alternateText);
+
+      const measuredAlternateBox =
+        alternateText.getBBox();
+
+      const alternateBox = {
+        x: measuredAlternateBox.x,
+        y: measuredAlternateBox.y,
+        width: measuredAlternateBox.width,
+        height: measuredAlternateBox.height
+    };
+
+    alternateText.remove();
+
+      const alternateConflict =
+        acceptedTexts[axis].some(
+          (acceptedTextBox) =>
+            axisLabelBoxesOverlap(
+              alternateBox,
+              acceptedTextBox
+            )
+    );
+
+    if (!alternateConflict) {
+        selectedText = alternateText;
+        selectedTextBox = alternateBox;
+        canShowText = true;
+      }
+}
+/*------------------------------------------------------------*/
+
+/* Dacă tickul nu se suprapune, este afișat. */
     if (!tickConflict) {
-      group.appendChild(tick);
-      acceptedTicks[axis].push(tickData);
+          group.appendChild(tick);
+          acceptedTicks[axis].push(tickData);
     }
 
-    /*
-      Dacă tickurile se suprapun, valoarea inferioară
-      pierde automat și textul.
-
-      Dacă numai textele se suprapun, dispare numai textul;
-      tickul distinct rămâne.
-    */
-    if (!tickConflict && !textConflict) {
-      group.appendChild(text);
-      acceptedTexts[axis].push(textBox);
+/*Dacă tickurile se suprapun, valoarea inferioară, pierde automat și textul.
+Dacă numai textele se suprapun, dispare numai textul; tickul distinct rămâne.*/
+    if (!tickConflict && canShowText) {
+      group.appendChild(selectedText);
+      acceptedTexts[axis].push(selectedTextBox);
     }
-  });
+    });
 
   /* Lista va fi reconstruită la următoarea actualizare */
-  axisMarkerCandidates.length = 0;
+    axisMarkerCandidates.length = 0;
 }

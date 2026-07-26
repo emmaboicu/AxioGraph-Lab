@@ -84,8 +84,18 @@ Declarațiile lupei — vor fi găsite în init  MAGNIFIER SOURCE  DISPARE
 */
 
 let magnifierActive = false;
-const MAGNIFIER_SOURCE_LONG = 12; 
-const MAGNIFIER_SOURCE_SHORT = 6;  
+/* Împărțirea fixă a axelor pentru Detail View */
+const MAGNIFIER_OX_ZONES = 4;
+const MAGNIFIER_OY_ZONES = 3;
+
+/*
+  Procentul din lungimea vizibilă a axei ocupat de lupă:
+  1 = 100%, 0.9 = 90%, 0.82 = 82%. SINGURUL CARE SE POATE REGLA.
+*/
+const MAGNIFIER_AXIS_FILL = 0.82;
+
+/* Grosimea zonei văzute de o parte și de alta a axei */
+const MAGNIFIER_CROSS_SOURCE = 20;
 
 let magnifierSensorsGroup;
 let magnifierLens;
@@ -110,11 +120,17 @@ function renderMagnifierContent(
     svg,
     magnifierLens,
     magnifierSvg,
+    scaleXValue,
+    scaleYValue,
+    stepXValue,
+    stepYValue,
     intersectionPointsData1,
     intersectionPointsData2,
     experimentalPointsData,
     slopePointsData,
     slopePointsData2,
+    trendlineStates,
+    trendlineConfigs,
     valueToGridX,
     valueToGridY,
     valuesToSvgPoint
@@ -1557,52 +1573,125 @@ function svgPointToContainer(x, y) {
 
 /* Afișează lupa pentru axa și poziția selectată */
 function showMagnifierAt(axis, svgX, svgY) {
-  const longHalf = MAGNIFIER_SOURCE_LONG / 2;
-  const shortHalf = MAGNIFIER_SOURCE_SHORT / 2;
 
-  let centerX;
-  let centerY;
-  let sourceMinX;
-  let sourceMinY;
-  let sourceWidth;
-  let sourceHeight;
+    let sourceMinX;
+    let sourceMinY;
+    let sourceWidth;
+    let sourceHeight;
 
-  if (axis === 'x') {
-    /* Pe OX se modifică numai poziția stânga-dreapta */
-    centerX = clamp(
-      svgX,
-      x0 + longHalf,
-      x0 + gridWidth - longHalf
+    if (axis === 'x') {
+      /* OX: clickul selectează unul dintre cele 4 sferturi */
+      const zoneWidth =
+        gridWidth / MAGNIFIER_OX_ZONES;
+
+      const positionInAxis = clamp(
+        svgX - x0,
+        0,
+        gridWidth
+      );
+
+      const zoneIndex = Math.min(
+        MAGNIFIER_OX_ZONES - 1,
+        Math.floor(positionInAxis / zoneWidth)
+      );
+
+      sourceMinX = x0 + zoneIndex * zoneWidth;
+      sourceWidth = zoneWidth;
+
+      /* Zonele apropiate de origine includ un pătrat în plus, din zona opusă */
+      if (zoneIndex === 1) {
+        sourceMinX += 10;
+      }
+
+      if (zoneIndex === 2) {
+        sourceMinX -= 10;
+      }
+
+      /*
+        80% din zona transversală este deasupra OX,
+        iar 20% rămâne dedesubt pentru tickuri și valori.
+      */
+      sourceMinY =
+        y0 - MAGNIFIER_CROSS_SOURCE * 0.8;
+
+      sourceHeight = MAGNIFIER_CROSS_SOURCE;
+
+    } else {
+      /* OY: clickul selectează una dintre cele 3 treimi */
+      const zoneHeight =
+        gridHeight / MAGNIFIER_OY_ZONES;
+
+      const positionFromOrigin = clamp(
+        y0 - svgY,
+        0,
+        gridHeight
+      );
+
+      const zoneIndex = Math.min(
+        MAGNIFIER_OY_ZONES - 1,
+        Math.floor(positionFromOrigin / zoneHeight)
+      );
+
+      sourceMinX =
+        originX - MAGNIFIER_CROSS_SOURCE / 2;
+
+      sourceWidth = MAGNIFIER_CROSS_SOURCE;
+
+      sourceMinY =
+        y0 - (zoneIndex + 1) * zoneHeight;
+
+      sourceHeight = zoneHeight;
+
+    /* Zona de jos include și spațiul necesar sub origine */
+      if (zoneIndex === 0) {
+        sourceMinY += MAGNIFIER_CROSS_SOURCE * 0.2;
+      }
+
+    }
+
+/* Alegem forma orizontală sau verticală */
+    magnifierLens.classList.toggle('is-x', axis === 'x');
+    magnifierLens.classList.toggle('is-y', axis === 'y');
+
+/* Dimensiunea reală, în pixeli, a grilei afișate */
+    const gridTopLeft = svgPointToContainer(
+      x0,
+      y0 - gridHeight
     );
 
-    centerY = y0;
-
-
-   sourceMinX = centerX - longHalf;
-   sourceMinY = centerY - shortHalf;
-   sourceWidth = MAGNIFIER_SOURCE_LONG;
-   sourceHeight = MAGNIFIER_SOURCE_SHORT;
-
-  } else {
-    /* Pe OY se modifică numai poziția sus-jos */
-    centerX = originX;
-
-    centerY = clamp(
-      svgY,
-      y0 - gridHeight + longHalf,
+    const gridBottomRight = svgPointToContainer(
+      x0 + gridWidth,
       y0
     );
 
-    sourceMinX = centerX - shortHalf;
-    sourceMinY = centerY - longHalf;
-    sourceWidth = MAGNIFIER_SOURCE_SHORT;
-    sourceHeight = MAGNIFIER_SOURCE_LONG;
+    const displayedGridWidth = Math.abs(
+      gridBottomRight.x - gridTopLeft.x
+    );
 
-  }
+    const displayedGridHeight = Math.abs(
+      gridBottomRight.y - gridTopLeft.y
+    );
 
-  /* Alegem forma orizontală sau verticală */
-  magnifierLens.classList.toggle('is-x', axis === 'x');
-  magnifierLens.classList.toggle('is-y', axis === 'y');
+    let lensWidth;
+    let lensHeight;
+
+    if (axis === 'x') {
+      lensWidth =
+        displayedGridWidth * MAGNIFIER_AXIS_FILL;
+
+      lensHeight =
+        lensWidth * (sourceHeight / sourceWidth);
+    } else {
+      lensHeight =
+        displayedGridHeight * MAGNIFIER_AXIS_FILL;
+
+      lensWidth =
+        lensHeight * (sourceWidth / sourceHeight);
+    }
+
+    magnifierLens.style.width = lensWidth + 'px';
+    magnifierLens.style.height = lensHeight + 'px';
+/*--------------------------------------------------------------------*/
 
   /* Trebuie afișată înainte să-i putem măsura dimensiunea */
   magnifierLens.hidden = false;
@@ -1615,54 +1704,69 @@ function showMagnifierAt(axis, svgX, svgY) {
   sourceWidth,
   sourceHeight
 );
+/* treb modificat cred -------------------------*/
 
-  const containerRect = $('a4-container').getBoundingClientRect();
-  const lensWidth = magnifierLens.offsetWidth;
-  const lensHeight = magnifierLens.offsetHeight;
+  const containerRect =
+    $('a4-container').getBoundingClientRect();
+
+  const actualLensWidth =
+    magnifierLens.offsetWidth;
+
+  const actualLensHeight =
+    magnifierLens.offsetHeight;
 
   let left;
   let top;
 
   if (axis === 'x') {
     /*
-      Lupa OX este centrată pe valoarea apăsată.
-      Partea de jos nu trece sub zona actuală a etichetelor.
+      Fereastra este centrată pe lungimea OX.
+      Axa din lupă se suprapune peste OX reală.
     */
-    const anchor = svgPointToContainer(centerX, y0);
+    const axisAnchor =
+      svgPointToContainer(originX, y0);
 
-    left = clamp(
-      anchor.x - lensWidth / 2,
-      0,
-      containerRect.width - lensWidth
-    );
+    const axisPositionInLens =
+      (y0 - sourceMinY) / sourceHeight;
 
-    top = clamp(
-      anchor.y - lensHeight / 2,
-      0,
-      containerRect.height - lensHeight
-    );
+    left =
+      gridTopLeft.x +
+      (displayedGridWidth - actualLensWidth) / 2;
+
+    top =
+      axisAnchor.y -
+      actualLensHeight * axisPositionInLens;
   } else {
     /*
-      Lupa OY apare în dreapta axei și este centrată
-      vertical pe valoarea apăsată.
+      Fereastra este centrată pe lungimea OY.
+      Axa din lupă se suprapune peste OY reală.
     */
-    const anchor = svgPointToContainer(originX, centerY);
+    const axisAnchor =
+      svgPointToContainer(originX, y0);
 
-    left = clamp(
-      anchor.x - lensWidth / 2,
-      0,
-      containerRect.width - lensWidth
-    );
+    left =
+      axisAnchor.x - actualLensWidth / 2;
 
-    top = clamp(
-      anchor.y - lensHeight / 2,
-      0,
-      containerRect.height - lensHeight
-    );
+    top =
+      gridTopLeft.y +
+      (displayedGridHeight - actualLensHeight) / 2;
   }
 
-  magnifierLens.style.left = left + 'px';
-  magnifierLens.style.top = top + 'px';
+    left = clamp(
+      left,
+      0,
+      Math.max(0, containerRect.width - actualLensWidth)
+  );
+
+    top = clamp(
+      top,
+      0,
+      Math.max(0, containerRect.height - actualLensHeight)
+  );
+
+    magnifierLens.style.left = left + 'px';
+    magnifierLens.style.top = top + 'px';
+
 }
 
 /* Creează zonele largi de click/tap din jurul axelor */

@@ -15,6 +15,12 @@ import {
   axisStroke
 } from './sheet.js';
 
+import {
+  AXIS_LABEL_PRIORITY,
+  queueAxisMarker,
+  renderAxisMarkers
+} from './axisLabelLayout.js';
+
 const MAGNIFIER_SPECIAL_TEXT_SIZE = 3.4;
 
 function isOriginValue(value) {
@@ -165,6 +171,74 @@ function renderMagnifierGrid(
   }
 }
 
+/* Desenează dreptele și prelungirile fără mânere */
+function renderMagnifierTrendlines(
+  group,
+  mapPoint,
+  normalScale,
+  context
+) {
+  const {
+    trendlineStates,
+    trendlineConfigs
+  } = context;
+
+  for (const index of [1, 2, 3, 4, 5, 6]) {
+    const state = trendlineStates?.[index];
+    const config = trendlineConfigs?.[index];
+
+    if (
+      !state?.isVisible ||
+      !state.p1 ||
+      !state.p2 ||
+      !config
+    ) {
+      continue;
+    }
+
+    const start = mapPoint(
+      state.p1.x,
+      state.p1.y
+    );
+
+    const end = mapPoint(
+      state.p2.x,
+      state.p2.y
+    );
+
+    const line = createMagnifierLine(
+      start.x,
+      start.y,
+      end.x,
+      end.y,
+      state.isFixed
+        ? config.fixedColor
+        : config.color,
+      (state.isFixed ? 0.45 : 0.6) * normalScale
+    );
+
+    line.setAttribute(
+      'stroke-opacity',
+      state.isFixed ? 1 : 0.78
+    );
+
+    line.setAttribute(
+      'stroke-linecap',
+      'round'
+    );
+
+    /* Indicii 2, 3, 5 și 6 sunt prelungiri */
+    if (![1, 4].includes(index)) {
+      line.setAttribute(
+        'stroke-dasharray',
+        `${2 * normalScale},${1.6 * normalScale}`
+      );
+    }
+
+    group.appendChild(line);
+  }
+}
+
 /* Desenează numai axa pe care a fost activat Detail View */
 function renderMagnifierSelectedAxis(
   group,
@@ -284,106 +358,151 @@ function renderMagnifierOrigin(
 
   group.appendChild(
     createMagnifierText(
-      'O',
+      '0',
       origin.x,
-      origin.y + 7 * normalScale,
+      origin.y + 5 * normalScale,
       'middle',
-      '#00008B',
+      '#146f9c',
       normalScale,
-      6
+      3.6
     )
   );
 }
 
-/* Desenează un tick special și valoarea lui colorată */
-function appendMagnifierSpecialValue(
+/* ==================================================================
+Pune valoarea și tickul în coada geometrică a lupei 
+=====================================================================*/
+function queueMagnifierAxisValue({
   group,
   axis,
   value,
   coord,
   color,
+  priority,
   mapPoint,
   normalScale,
-  pointX = null
-) {
+  pointX = null,
+  textSize = MAGNIFIER_SPECIAL_TEXT_SIZE,
+  tickStrokeWidth = 0.45
+}) {
   if (isOriginValue(value)) return;
+
+  let tick;
+  let text;
+  let alternateText = null;
+  let markerCoord;
 
   if (axis === 'x') {
     const tickCenter = mapPoint(coord, y0);
     const tickHalf = 1.5 * normalScale;
 
-    group.appendChild(
-      createMagnifierLine(
-        tickCenter.x,
-        tickCenter.y - tickHalf,
-        tickCenter.x,
-        tickCenter.y + tickHalf,
-        color,
-        0.45 * normalScale
-      )
+    tick = createMagnifierLine(
+      tickCenter.x,
+      tickCenter.y - tickHalf,
+      tickCenter.x,
+      tickCenter.y + tickHalf,
+      color,
+      tickStrokeWidth * normalScale
     );
 
-    group.appendChild(
-      createMagnifierText(
-        value,
-        tickCenter.x,
-        tickCenter.y + 5 * normalScale,
-        'middle',
-        color,
-        normalScale
-      )
+    text = createMagnifierText(
+      value,
+      tickCenter.x,
+      tickCenter.y + 5 * normalScale,
+      'middle',
+      color,
+      normalScale,
+      textSize
     );
 
-    return;
-  }
+    alternateText = createMagnifierText(
+      value,
+      tickCenter.x,
+      tickCenter.y - 2.2 * normalScale,
+      'middle',
+      color,
+      normalScale,
+      textSize
+    );
 
-  const labelOnRight =
-    pointX !== null && pointX < originX;
+    markerCoord = tickCenter.x;
+  } else {
+    const labelOnRight =
+      pointX !== null && pointX < originX;
 
-  const tickCenter = mapPoint(originX, coord);
-  const tickHalf = 1.5 * normalScale;
-  const labelX = labelOnRight
-    ? tickCenter.x + 2.2 * normalScale
-    : tickCenter.x - 2.2 * normalScale;
+    const tickCenter = mapPoint(originX, coord);
+    const tickHalf = 1.5 * normalScale;
 
-  group.appendChild(
-    createMagnifierLine(
+    const labelX = labelOnRight
+      ? tickCenter.x + 2.2 * normalScale
+      : tickCenter.x - 2.2 * normalScale;
+
+    tick = createMagnifierLine(
       tickCenter.x - tickHalf,
       tickCenter.y,
       tickCenter.x + tickHalf,
       tickCenter.y,
       color,
-      0.45 * normalScale
-    )
-  );
+      tickStrokeWidth * normalScale
+    );
 
-  group.appendChild(
-    createMagnifierText(
+    text = createMagnifierText(
       value,
       labelX,
       tickCenter.y + 1.2 * normalScale,
       labelOnRight ? 'start' : 'end',
       color,
-      normalScale
-    )
-  );
+      normalScale,
+      textSize
+    );
+
+    markerCoord = tickCenter.y;
+  }
+
+  queueAxisMarker({
+    group,
+    axis,
+    coord: markerCoord,
+    text,
+    alternateText,
+    tick,
+    priority
+  });
 }
+
 
 /* Adună valorile speciale ale axei, fără dubluri */
 function getMagnifierAxisValues(axis, context) {
-  const {
-    intersectionPointsData1,
-    intersectionPointsData2,
-    experimentalPointsData,
-    slopePointsData,
-    slopePointsData2,
-    valueToGridX,
-    valueToGridY,
-    valuesToSvgPoint
-  } = context;
-  const items = [];
+    const {
+      sourceMinX,
+      sourceMinY,
+      sourceWidth,
+      sourceHeight,
+      scaleXValue,
+      scaleYValue,
+      stepXValue,
+      stepYValue,
+      intersectionPointsData1,
+      intersectionPointsData2,
+      experimentalPointsData,
+      slopePointsData,
+      slopePointsData2,
+      valueToGridX,
+      valueToGridY,
+      valuesToSvgPoint
+    } = context;
 
-  function addValue(value, color, pointX = null) {
+    const items = [];
+
+    function addValue(
+      value,
+      color,
+      priority,
+      pointX = null,
+      textSize = MAGNIFIER_SPECIAL_TEXT_SIZE,
+      tickStrokeWidth = 0.45
+    ) {
+
     if (
       value === null ||
       value === undefined ||
@@ -406,25 +525,43 @@ function getMagnifierAxisValues(axis, context) {
 
     if (coord === null) return;
 
+    const sourceStart =
+      axis === 'x' ? sourceMinX : sourceMinY;
+
+    const sourceEnd =
+      axis === 'x'
+        ? sourceMinX + sourceWidth
+        : sourceMinY + sourceHeight;
+
+    if (coord < sourceStart || coord > sourceEnd) {
+      return;
+    }
+
     items.push({
       value,
       coord,
       color,
-      pointX
+      priority,
+      pointX,
+      textSize,
+      tickStrokeWidth,
     });
   }
 
   /* Prioritatea 1: Intercepts */
   [intersectionPointsData1, intersectionPointsData2]
     .forEach((data) => {
+
       addValue(
         axis === 'x' ? data.x : data.y,
-        '#9f1ef5'
+        '#9f1ef5',
+        AXIS_LABEL_PRIORITY.intercept
       );
     });
 
   /* Prioritatea 2: Experimental Points */
   experimentalPointsData.forEach((pointData) => {
+
     const point = valuesToSvgPoint(
       pointData.x,
       pointData.y
@@ -435,12 +572,14 @@ function getMagnifierAxisValues(axis, context) {
     addValue(
       axis === 'x' ? pointData.x : pointData.y,
       '#f63fcb',
+      AXIS_LABEL_PRIORITY.experimental,
       point.x
     );
   });
 
-  /* Prioritatea 3: Slope Points */
+  /* Prioritatea 3: Slope Points afișare */
   [...slopePointsData, ...slopePointsData2]
+
     .forEach((pointData) => {
       if (!pointData) return;
 
@@ -454,9 +593,59 @@ function getMagnifierAxisValues(axis, context) {
       addValue(
         axis === 'x' ? pointData.x : pointData.y,
         '#f06216',
+        AXIS_LABEL_PRIORITY.slope,
         point.x
       );
     });
+
+  /* Afișare Steps — prioritatea cea mai mică */
+    const scaleValue = Number(
+      axis === 'x' ? scaleXValue : scaleYValue
+    );
+
+    const stepValue = Number(
+      axis === 'x' ? stepXValue : stepYValue
+    );
+
+    if (
+      Number.isFinite(scaleValue) &&
+      scaleValue > 0 &&
+      Number.isFinite(stepValue) &&
+      stepValue > 0
+    ) {
+      const maximumValue =
+        axis === 'x'
+          ? (gridWidth / 2 / 10) * scaleValue
+          : (gridHeight / 10) * scaleValue;
+
+      const stepCount = Math.floor(
+        maximumValue / stepValue
+      );
+
+      const firstIndex =
+        axis === 'x' ? -stepCount : 1;
+
+      for (
+        let index = firstIndex;
+        index <= stepCount;
+        index++
+      ) {
+        if (index === 0) continue;
+
+        const value = Number(
+          (index * stepValue).toFixed(6)
+        );
+
+        addValue(
+          value,
+          '#146f9c',
+          AXIS_LABEL_PRIORITY.step,
+          null,
+          3.2,
+          0.25
+        );
+      }
+    }
 
   return items;
 }
@@ -471,18 +660,23 @@ function renderMagnifierAxisValues(
 ) {
   const items = getMagnifierAxisValues(axis, context);
 
-  items.forEach((item) => {
-    appendMagnifierSpecialValue(
+    items.forEach((item) => {
+    queueMagnifierAxisValue({
       group,
       axis,
-      item.value,
-      item.coord,
-      item.color,
+      value: item.value,
+      coord: item.coord,
+      color: item.color,
+      priority: item.priority,
       mapPoint,
       normalScale,
-      item.pointX
-    );
+      pointX: item.pointX,
+      textSize: item.textSize,
+      tickStrokeWidth: item.tickStrokeWidth
+    });
   });
+
+  renderAxisMarkers(group);
 }
 
 /* Construiește conținutul complet al Axis Detail View */
@@ -584,6 +778,13 @@ export function renderAxisMagnifier(context) {
     sourceHeight,
     mapPoint,
     normalScale
+  );
+
+    renderMagnifierTrendlines(
+    contentGroup,
+    mapPoint,
+    normalScale,
+    context
   );
 
   renderMagnifierSelectedAxis(
