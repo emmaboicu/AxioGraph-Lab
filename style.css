@@ -1393,7 +1393,4 @@ body.preview-mode #exit-preview:active {
     height: calc(100dvh - 16px);
   }
 
-  #graph {
-    touch-action: none;
-  }
 }
