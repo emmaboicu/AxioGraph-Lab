@@ -1391,4 +1391,9 @@ body.preview-mode #exit-preview:active {
     height: 100dvh;
   }
 }
+.trend-handle,
+.trend-hit,
+.curve-handle {
+  touch-action: none;
+}
 
