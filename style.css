@@ -1381,19 +1381,19 @@ body.preview-mode #exit-preview:active {
   transform: translateY(0) scale(0.96);
   transition-duration: 0.08s;
 }
+
 @media (max-width: 700px) {
-  #a4-container {
-    width: auto;
-    height: calc(100dvh - 16px);
-  }
   .graph-area,
   .control-panel {
     height: 100dvh;
   }
-}
-.trend-handle,
-.trend-hit,
-.curve-handle {
-  touch-action: none;
-}
 
+  #a4-container {
+    width: auto;
+    height: calc(100dvh - 16px);
+  }
+
+  #graph {
+    touch-action: none;
+  }
+}
