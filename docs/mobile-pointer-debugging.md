@@ -77,21 +77,29 @@ Motorul suplimentar nu este necesar. Captura originală pe `svg` este suficient�
 
 ## Soluția care funcționează
 
-Pe SVG există un listener `touchstart` declarat explicit nepasiv:
+Pe SVG există un listener `touchstart` declarat explicit nepasiv. Funcția care tratează atingerea este scrisă direct în listener; nu există o funcție separată numită `handleTouchStart`.
 
 ```js
 svg.addEventListener(
   'touchstart',
-  handleTouchStart,
+  (evt) => {
+    if (!window.matchMedia('(max-width: 700px)').matches) return;
+
+    const touchedDrawing = evt.target.matches(
+      '.trend-hit-band, ' +
+      '.trend-handle, ' +
+      '.trend-handle-hit, ' +
+      '.curve-handle, ' +
+      '.curve-handle-hit, ' +
+      '.magnifier-sensor'
+    );
+
+    if (!touchedDrawing) return;
+
+    evt.preventDefault();
+  },
   { passive: false }
 );
-```
-
-Dacă atingerea începe pe o dreaptă, pe banda ei invizibilă sau pe un mâner, handlerul execută:
-
-```js
-evt.preventDefault();
-```
 
 Astfel, browserul nu mai preia gestul pentru scroll și nu mai trimite `pointercancel`. Motorul existent de Pointer Events continuă normal până la `pointerup`.
 
