@@ -1,0 +1,165 @@
+# Mobile Pointer Debugging Notes
+
+## Problema
+
+Pe desktop, motorul din `setupPointerEvents()` funcționa corect:
+
+1. `pointerdown` identifica dreapta sau mânerul prin `data-role` și `data-trendline`;
+2. memora `pointerId`, tipul deplasării și poziția inițială;
+3. `pointermove` modifica poziția;
+4. `pointerup` încheia dragul;
+5. `setPointerCapture()` păstra pointerul asociat interacțiunii.
+
+Pe telefon, dreapta se deplasa foarte puțin și apoi se oprea. Pentru a continua, trebuiau făcute multe impulsuri scurte cu degetul.
+
+## Cauza reală
+
+Motorul JavaScript pornea corect. Problema era că browserul interpreta deplasarea degetului drept intenție de scroll.
+
+Fluxul real era:
+
+```text
+touchstart
+→ pointerdown
+→ câteva pointermove
+→ browserul decide că gestul este scroll
+→ pointercancel
+```
+
+După `pointercancel`, captura era eliberată și dragul nu mai putea continua.
+
+`setPointerCapture()` păstrează pointerul când acesta iese din zona elementului, dar nu poate împiedica browserul să anuleze complet gestul.
+
+## Diagnosticul prin culori
+
+Pentru a vedea evenimentele invizibile, au fost folosite temporar trei culori:
+
+* galben = `pointerdown`;
+* roz = `pointercancel`;
+* verde = `pointerup`.
+
+Pe telefon, foaia devenea galbenă și apoi roz în mai puțin de jumătate de secundă, fără ca degetul să fie ridicat.
+
+Acest test a demonstrat că:
+
+* elementul primea corect atingerea;
+* motorul începea dragul;
+* problema nu era lipsa `pointerdown`;
+* browserul trimitea efectiv `pointercancel`.
+
+## Încercări care nu au rezolvat problema
+
+### `touch-action: none` numai pe elementele SVG mici
+
+A fost aplicat pe:
+
+```css
+.trend-handle,
+.curve-handle,
+.trend-hit
+```
+
+Nu a asigurat dragul continuu.
+
+### `touch-action: none` pe întregul SVG
+
+Aplicarea pe `#graph` a oprit scroll-ul și a confirmat că telefonul respectă proprietatea pe containerul SVG mare.
+
+Totuși, soluția nu era acceptabilă deoarece utilizatorul nu mai putea naviga normal peste foaie.
+
+### Mutarea capturii pe `#a4-container`
+
+Captura și listener-ele au fost mutate temporar pe containerul HTML stabil.
+
+Schimbarea nu a oprit `pointercancel`, deoarece browserul poate anula gestul indiferent de elementul care deține captura.
+
+Motorul suplimentar nu este necesar. Captura originală pe `svg` este suficientă.
+
+## Soluția care funcționează
+
+Pe SVG există un listener `touchstart` declarat explicit nepasiv:
+
+```js
+svg.addEventListener(
+  'touchstart',
+  handleTouchStart,
+  { passive: false }
+);
+```
+
+Dacă atingerea începe pe o dreaptă, pe banda ei invizibilă sau pe un mâner, handlerul execută:
+
+```js
+evt.preventDefault();
+```
+
+Astfel, browserul nu mai preia gestul pentru scroll și nu mai trimite `pointercancel`. Motorul existent de Pointer Events continuă normal până la `pointerup`.
+
+Important: `{ passive: false }` este necesar. Într-un listener pasiv, browserul poate ignora `preventDefault()`.
+
+## De ce nu era suficient `touch-action`
+
+Browserul stabilește comportamentul `touch-action` când începe atingerea.
+
+Dacă valoarea este schimbată ulterior, în `pointerdown`, este deja prea târziu pentru gestul aflat în desfășurare.
+
+De asemenea:
+
+* `touch-action` controlează gesturile de scroll și zoom;
+* nu oprește automat selectarea, căutarea sau meniul de apăsare lungă;
+* `preventDefault()` în `touchstart` oprește acțiunea implicită înainte ca browserul să revendice gestul.
+
+## Zone de prindere pentru touch
+
+Elementele vizibile sunt prea mici pentru un deget. Ele nu au fost mărite vizual.
+
+Au fost adăugate forme SVG transparente:
+
+* o bandă reală în jurul dreptei, cu lățimea totală de `16` unități SVG;
+* cercuri invizibile cu raza `8` în jurul mânerelor.
+
+Aceste forme au aceleași informații `data-role` și `data-trendline` ca elementele controlate.
+
+Pentru a împiedica selectarea sau căutarea la apăsare lungă:
+
+```css
+-webkit-user-select: none;
+user-select: none;
+-webkit-touch-callout: none;
+```
+
+## Modelul mental de reținut
+
+```text
+Deget
+→ sistem de operare
+→ browser
+→ touchstart
+→ browserul decide cine controlează gestul
+→ pointerdown
+→ pointermove
+→ pointerup sau pointercancel
+→ motorul aplicației
+→ actualizarea SVG
+→ ecran
+```
+
+Dacă browserul revendică gestul pentru scroll, aplicația primește `pointercancel`.
+
+Dacă `touchstart` execută la timp `preventDefault()` numai pentru țintele draggable, aplicația păstrează gestul, iar restul paginii rămâne navigabil.
+
+## Teste finale
+
+După modificare trebuie verificate:
+
+* drag continuu al ambelor drepte;
+* deplasarea mânerelor;
+* deplasarea prelungirilor;
+* funcționarea curbei;
+* mișcarea fluentă a lupei;
+* navigarea normală când atingerea începe în afara unei ținte draggable;
+* lipsa selectării sau căutării la apăsare lungă;
+* funcționarea neschimbată pe desktop;
+* lipsa evenimentelor neașteptate `pointercancel`.
+
+Soluția a fost testată pe telefon real. Dreptele, mânerele și lupa se deplasează fluent, iar foaia și panoul rămân navigabile.
