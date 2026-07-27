@@ -1421,7 +1421,7 @@ function setupPointerEvents() {
               '.trend-handle, ' +
               '.trend-handle-hit, ' +
               '.curve-handle, ' +
-              '.curve-handle-hit'+
+              '.curve-handle-hit,'+
              '.magnifier-sensor'
            );
 
