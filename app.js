@@ -33,7 +33,7 @@ import {
 import {
   renderTrendlineSvg,
   renderCurveLineSvg
-} from './drawingRenderer.js?v=mobile-4';
+} from './drawingRenderer.js';
 
 import {
   createTrendlineConfigs
@@ -1404,34 +1404,35 @@ Interacțiunea utilizatorului pentru adăugarea și ștergerea punctelor de pant
 /*===================================================================================*/
 
 /*====================================================================
-COORDONARE DINTRE SVG, STARE APLICAȚIE ȘI RENDERE. CORECTURĂ PT MOBIL
+COORDONARE DINTRE SVG, STARE APLICAȚIE ȘI RENDERE
 ======================================================================*/
 
 /* Controlează deplasarea dreptelor, prelungirilor și curbei cu mouse-ul sau atingerea */
 function setupPointerEvents() {
 
-  const dragSurface = $('a4-container');
-
-  function getCaptureTarget(evt) {
-    return evt.pointerType === 'touch' ? dragSurface : svg;
-  }
+/* CORECȚIE MOBIL: împiedică browserul să preia gestul de drag */
   svg.addEventListener(
     'touchstart',
     (evt) => {
       if (!window.matchMedia('(max-width: 700px)').matches) return;
-  
-      const touchedLine1 = evt.target.matches(
-        '.trend-hit-band[data-trendline="1"], ' +
-        '.trend-handle[data-trendline="1"]'
-      );
-  
-      if (!touchedLine1) return;
-  
+
+          const touchedDrawing = evt.target.matches(
+              '.trend-hit-band, ' +
+              '.trend-handle, ' +
+              '.trend-handle-hit, ' +
+              '.curve-handle, ' +
+              '.curve-handle-hit'+
+             '.magnifier-sensor'
+           );
+
+          if (!touchedDrawing) return;
+
       evt.preventDefault();
     },
     { passive: false }
   );
-  
+/*-----------------------------------------------------------------------*/
+
   svg.addEventListener('pointerdown', (evt) => {
     const role = evt.target.dataset.role;
 
@@ -1441,7 +1442,7 @@ function setupPointerEvents() {
       evt.preventDefault();
       curveLineState.dragIndex = Number(evt.target.dataset.index);
       curveLineState.pointerId = evt.pointerId;
-      getCaptureTarget(evt).setPointerCapture(evt.pointerId);
+      svg.setPointerCapture(evt.pointerId);
       return;
     }
 
@@ -1453,18 +1454,14 @@ function setupPointerEvents() {
     const state = trendlineStates[trendlineIndex];
     if (!state.isVisible) return;
 
-    if (evt.pointerType === 'touch' && trendlineIndex === 1) {
-    svg.style.backgroundColor = '#fff4b8';
-    }
-
     evt.preventDefault();
     state.dragMode = role;
     state.pointerId = evt.pointerId;
     state.lastPoint = clampPointToGrid(getSvgPoint(evt));
-    getCaptureTarget(evt).setPointerCapture(evt.pointerId);
+    svg.setPointerCapture(evt.pointerId);
   });
 
- dragSurface.addEventListener('pointermove', (evt) => {
+  svg.addEventListener('pointermove', (evt) => {
     if (curveLineState.pointerId === evt.pointerId && curveLineState.dragIndex !== null) {
       evt.preventDefault();
 
@@ -1525,16 +1522,6 @@ function setupPointerEvents() {
   });
 
   function stopDrag(evt) {
-    const line1WasDragging =
-        trendlineStates[1].pointerId === evt.pointerId;
-      
-      if (evt.pointerType === 'touch' && line1WasDragging) {
-        svg.style.backgroundColor =
-          evt.type === 'pointercancel'
-            ? '#ffd6d6'
-            : '#dfffe0';
-       }
-    
     if (curveLineState.pointerId === evt.pointerId) {
       curveLineState.dragIndex = null;
       curveLineState.pointerId = null;
@@ -1549,16 +1536,12 @@ function setupPointerEvents() {
       state.pointerId = null;
       state.lastPoint = null;
     }
-    
-    const captureTarget = getCaptureTarget(evt);
 
-      if (captureTarget.hasPointerCapture(evt.pointerId)) {
-    captureTarget.releasePointerCapture(evt.pointerId);
-    }
+    if (svg.hasPointerCapture(evt.pointerId)) svg.releasePointerCapture(evt.pointerId);
   }
 
-  dragSurface.addEventListener('pointerup', stopDrag);
-  dragSurface.addEventListener('pointercancel', stopDrag);
+  svg.addEventListener('pointerup', stopDrag);
+  svg.addEventListener('pointercancel', stopDrag);
 
   svg.addEventListener('pointerdown', () => markDirty(), true);
 }
@@ -1920,6 +1903,12 @@ function setupMagnifierEngine() {
   }
 /*----------------------------------------------------------------*/
 
+/* ========================TODO mobil — îmbunătățire opțională:
+Lupa funcționează prin tap/click pe axă.
+Pentru drag fluid din întreaga fereastră afișată, senzorii OX/OY
+ar trebui extinși la suprafața lupei, numai cât timp Detail View este activ,
+fără să intercepteze dreptele și prelungirile când lupa este oprită.
+=======================================================================*/
   function createAxisSensor(axis) {
     const sensor = document.createElementNS(
       'http://www.w3.org/2000/svg',
@@ -1941,6 +1930,9 @@ function setupMagnifierEngine() {
     }
 
     sensor.setAttribute('fill', 'transparent');
+
+    sensor.setAttribute('class', 'magnifier-sensor');
+
     //sensor.setAttribute('pointer-events', 'all');
     sensor.style.cursor = 'zoom-in';
 
