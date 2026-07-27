@@ -1282,6 +1282,7 @@ button:disabled {
 .trend-handle,
 .curve-handle {
   pointer-events: all;
+  touch-action: none;
 }
 
 .trend-hit {
