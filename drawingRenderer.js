@@ -40,6 +40,42 @@ export function renderTrendlineSvg(index, state, cfg) {
       hitLine.style.cursor = 'move';
       layer.appendChild(hitLine);
 
+      /* TEST MOBIL: bandă transparentă reală pentru Line 1 */
+      if (index === 1) {
+        const dx = state.p2.x - state.p1.x;
+        const dy = state.p2.y - state.p1.y;
+        const length = Math.hypot(dx, dy) || 1;
+      
+        const halfWidth = 8;
+        const offsetX = (-dy / length) * halfWidth;
+        const offsetY = (dx / length) * halfWidth;
+      
+        const hitBand = document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'polygon'
+        );
+      
+        hitBand.setAttribute(
+          'points',
+          [
+            `${state.p1.x + offsetX},${state.p1.y + offsetY}`,
+            `${state.p2.x + offsetX},${state.p2.y + offsetY}`,
+            `${state.p2.x - offsetX},${state.p2.y - offsetY}`,
+            `${state.p1.x - offsetX},${state.p1.y - offsetY}`
+          ].join(' ')
+        );
+      
+        hitBand.setAttribute('fill', 'transparent');
+        hitBand.setAttribute('pointer-events', 'none');
+        hitBand.setAttribute('class', 'trend-hit-band');
+      
+        hitBand.dataset.role = 'line';
+        hitBand.dataset.trendline = String(index);
+        hitBand.style.cursor = 'move';
+      
+        layer.appendChild(hitBand);
+      }
+
       const handle1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       handle1.setAttribute('cx', state.p1.x);
       handle1.setAttribute('cy', state.p1.y);
