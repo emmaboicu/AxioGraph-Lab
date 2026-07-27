@@ -1383,15 +1383,20 @@ body.preview-mode #exit-preview:active {
 }
 
 @media (max-width: 700px) {
- .graph-area {
-   flex: 0 0 auto;
-   min-width: 0;
-   height: 100dvh;
- }
+  .graph-area {
+    flex: 0 0 auto;
+    min-width: 0;
+    height: 100dvh;
+  }
+
+  .control-panel {
+    height: 100dvh;
+    min-height: 0;
+    overflow-y: auto;
+  }
 
   #a4-container {
     width: auto;
     height: calc(100dvh - 16px);
   }
-
 }
