@@ -1415,6 +1415,22 @@ function setupPointerEvents() {
   function getCaptureTarget(evt) {
     return evt.pointerType === 'touch' ? dragSurface : svg;
   }
+  svg.addEventListener(
+    'touchstart',
+    (evt) => {
+      if (!window.matchMedia('(max-width: 700px)').matches) return;
+  
+      const touchedLine1 = evt.target.matches(
+        '.trend-hit-band[data-trendline="1"], ' +
+        '.trend-handle[data-trendline="1"]'
+      );
+  
+      if (!touchedLine1) return;
+  
+      evt.preventDefault();
+    },
+    { passive: false }
+  );
   
   svg.addEventListener('pointerdown', (evt) => {
     const role = evt.target.dataset.role;
