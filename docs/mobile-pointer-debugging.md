@@ -101,6 +101,7 @@ svg.addEventListener(
   { passive: false }
 );
 ...
+
 Astfel, browserul nu mai preia gestul pentru scroll și nu mai trimite `pointercancel`. Motorul existent de Pointer Events continuă normal până la `pointerup`.
 
 Important: `{ passive: false }` este necesar. Într-un listener pasiv, browserul poate ignora `preventDefault()`.
