@@ -33,7 +33,7 @@ import {
 import {
   renderTrendlineSvg,
   renderCurveLineSvg
-} from './drawingRenderer.js';
+} from './drawingRenderer.js?v=mobile-4';
 
 import {
   createTrendlineConfigs
