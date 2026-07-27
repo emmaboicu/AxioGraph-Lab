@@ -98,19 +98,13 @@ A visual diagnostic was used:
 
 Testing showed that the browser interpreted the gesture as page scrolling and emitted `pointercancel` before the finger was lifted.
 
-The working solution is a non-passive `touchstart` listener:
+The working solution is a non-passive `touchstart` listener on the SVG. On mobile, it calls `preventDefault()` only when the touch starts on a draggable SVG target: a trendline band, a trendline handle, a curve handle, or a Detail View sensor.
 
-```js
-svg.addEventListener('touchstart', handleTouchStart, {
-  passive: false
-});
-```
-
-When the touch begins on a draggable line or handle, `preventDefault()` stops the browser from starting its scrolling gesture. The existing pointer flow can then continue normally.
+This prevents browser scrolling from cancelling the pointer interaction, while ordinary navigation remains available elsewhere on the sheet. The existing pointer flow can then continue normally.
 
 This solution preserves ordinary page navigation outside draggable graph elements. Applying `touch-action: none` to the entire SVG was intentionally avoided because it prevented normal movement across the sheet.
 
-Pointer capture remains on the original SVG; an additional capture system on the HTML container was tested and found unnecessary.
+For trendlines and curve handles, pointer capture remains on the original SVG. Detail View uses pointer capture on the active axis sensor. The experimental capture system on `#a4-container` was unnecessary and was removed.
 
 ### Performance Note
 
