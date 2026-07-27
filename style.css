@@ -1287,6 +1287,7 @@ button:disabled {
 
 .trend-hit {
   pointer-events: stroke;
+  touch-action: none;
 }
 
 
