@@ -1401,4 +1401,12 @@ body.preview-mode #exit-preview:active {
     width: auto;
     height: calc(100dvh - 16px);
   }
+  .trend-hit[data-trendline="1"] {
+    pointer-events: none;
+  }
+
+  .trend-hit-band[data-trendline="1"] {
+    pointer-events: all;
+    touch-action: none;
+  }
 }
