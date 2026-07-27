@@ -1404,11 +1404,18 @@ Interacțiunea utilizatorului pentru adăugarea și ștergerea punctelor de pant
 /*===================================================================================*/
 
 /*====================================================================
-COORDONARE DINTRE SVG, STARE APLICAȚIE ȘI RENDERE
+COORDONARE DINTRE SVG, STARE APLICAȚIE ȘI RENDERE. CORECTURĂ PT MOBIL
 ======================================================================*/
 
 /* Controlează deplasarea dreptelor, prelungirilor și curbei cu mouse-ul sau atingerea */
 function setupPointerEvents() {
+
+  const dragSurface = $('a4-container');
+
+  function getCaptureTarget(evt) {
+    return evt.pointerType === 'touch' ? dragSurface : svg;
+  }
+  
   svg.addEventListener('pointerdown', (evt) => {
     const role = evt.target.dataset.role;
 
@@ -1418,7 +1425,7 @@ function setupPointerEvents() {
       evt.preventDefault();
       curveLineState.dragIndex = Number(evt.target.dataset.index);
       curveLineState.pointerId = evt.pointerId;
-      svg.setPointerCapture(evt.pointerId);
+      getCaptureTarget(evt).setPointerCapture(evt.pointerId);
       return;
     }
 
@@ -1434,10 +1441,10 @@ function setupPointerEvents() {
     state.dragMode = role;
     state.pointerId = evt.pointerId;
     state.lastPoint = clampPointToGrid(getSvgPoint(evt));
-    svg.setPointerCapture(evt.pointerId);
+    getCaptureTarget(evt).setPointerCapture(evt.pointerId);
   });
 
-  svg.addEventListener('pointermove', (evt) => {
+ dragSurface.addEventListener('pointermove', (evt) => {
     if (curveLineState.pointerId === evt.pointerId && curveLineState.dragIndex !== null) {
       evt.preventDefault();
 
@@ -1512,12 +1519,16 @@ function setupPointerEvents() {
       state.pointerId = null;
       state.lastPoint = null;
     }
+    
+    const captureTarget = getCaptureTarget(evt);
 
-    if (svg.hasPointerCapture(evt.pointerId)) svg.releasePointerCapture(evt.pointerId);
+      if (captureTarget.hasPointerCapture(evt.pointerId)) {
+    captureTarget.releasePointerCapture(evt.pointerId);
+    }
   }
 
-  svg.addEventListener('pointerup', stopDrag);
-  svg.addEventListener('pointercancel', stopDrag);
+  dragSurface.addEventListener('pointerup', stopDrag);
+  dragSurface.addEventListener('pointercancel', stopDrag);
 
   svg.addEventListener('pointerdown', () => markDirty(), true);
 }
