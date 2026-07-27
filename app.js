@@ -1437,6 +1437,10 @@ function setupPointerEvents() {
     const state = trendlineStates[trendlineIndex];
     if (!state.isVisible) return;
 
+    if (evt.pointerType === 'touch' && trendlineIndex === 1) {
+    svg.style.backgroundColor = '#fff4b8';
+    }
+
     evt.preventDefault();
     state.dragMode = role;
     state.pointerId = evt.pointerId;
@@ -1505,6 +1509,16 @@ function setupPointerEvents() {
   });
 
   function stopDrag(evt) {
+    const line1WasDragging =
+        trendlineStates[1].pointerId === evt.pointerId;
+      
+      if (evt.pointerType === 'touch' && line1WasDragging) {
+        svg.style.backgroundColor =
+          evt.type === 'pointercancel'
+            ? '#ffd6d6'
+            : '#dfffe0';
+       }
+    
     if (curveLineState.pointerId === evt.pointerId) {
       curveLineState.dragIndex = null;
       curveLineState.pointerId = null;
