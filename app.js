@@ -870,9 +870,6 @@ function applyWorkState(state) {
     return;
   }
 
-  axisLabels.x = state.axisLabels?.x || '';
-
-
     axisLabels.x = state.axisLabels?.x || '';
     axisLabels.y = state.axisLabels?.y || '';
 
@@ -1284,10 +1281,10 @@ Interacțiunea utilizatorului pentru adăugarea și ștergerea punctelor de pant
 
   $('activate-extensions-2').addEventListener('click', () => {
     if (!trendlineStates[5].isVisible || !trendlineStates[6].isVisible) {
-      const ok5 = createExtensionFromTrendline(2);
+      const ok5 = createExtensionFromTrendline(5);
       if (!ok5) return;
 
-      const ok6 = createExtensionFromTrendline(3);
+      const ok6 = createExtensionFromTrendline(6);
       if (!ok6) return;
     } else {
       trendlineStates[5].isFixed = false;
