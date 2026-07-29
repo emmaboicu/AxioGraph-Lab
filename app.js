@@ -350,7 +350,7 @@ function addDataPoint() {
   if (isNaN(valX) || isNaN(valY)) return;
 
   if (!valuesToSvgPoint(valX, valY)) {
-    alert('Verifică scara. Punctul trebuie să fie în interiorul graficului.');
+    alert('Check the scale and the coordinates of point P. The point must be inside the graph area.');
     return;
   }
 
@@ -720,7 +720,7 @@ function createExtensionFromTrendline(index) {
   const base = trendlineStates[baseIndex];
 
   if (!base.isVisible || !base.isFixed || !base.p1 || !base.p2) {
-    alert('Fixează mai întâi dreapta de tendință.');
+    alert('Fix the trendline before creating an extension.');
     return false;
   }
 
@@ -802,7 +802,8 @@ function renderCurveLine() {
 function getWorkState() {
   return {
     app: 'AxioGraph',
-    version: 'AxioGraph_4',
+    edition: 'Lab',
+    schemaVersion: 1,
     savedAt: new Date().toISOString(),
     axisLabels: {
       x: $('axis-label-input-x').value,
@@ -852,10 +853,25 @@ function readSavedNumber(value) {
 
 
 function applyWorkState(state) {
-    if (!state || state.app !== 'AxioGraph') {
-      alert('Fișierul ales nu pare să fie o lucrare Axio validă.');
-      return;
-    }
+  const isAxioGraphFile =
+    state &&
+    typeof state === 'object' &&
+    !Array.isArray(state) &&
+    state.app === 'AxioGraph';
+
+  const hasSupportedSchema =
+    state?.schemaVersion === undefined ||
+    state.schemaVersion === 1;
+
+  if (!isAxioGraphFile || !hasSupportedSchema) {
+    alert(
+      'The selected file is not a valid or supported AxioGraph work file.'
+    );
+    return;
+  }
+
+  axisLabels.x = state.axisLabels?.x || '';
+
 
     axisLabels.x = state.axisLabels?.x || '';
     axisLabels.y = state.axisLabels?.y || '';
@@ -986,7 +1002,7 @@ function buildDefaultFilename() {
     String(now.getHours()).padStart(2, '0') + '-' +
     String(now.getMinutes()).padStart(2, '0');
 
-  return 'AxioGraph_4_' + stamp + '.axio';
+  return 'AxioGraph-Lab_' + stamp + '.axio';
 }
 
 function saveWork() {
@@ -1015,7 +1031,7 @@ function loadWorkFromFile(event) {
       applyWorkState(JSON.parse(reader.result));
     } catch (err) {
       console.error(err);
-      alert('Fișierul nu a putut fi încărcat.');
+      alert('The file could not be loaded.');
     }
   };
   reader.readAsText(file);
