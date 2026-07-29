@@ -1284,9 +1284,11 @@ Interacțiunea utilizatorului pentru adăugarea și ștergerea punctelor de pant
 
   $('activate-extensions-2').addEventListener('click', () => {
     if (!trendlineStates[5].isVisible || !trendlineStates[6].isVisible) {
-      const ok5 = createExtensionFromTrendline(5);
-      const ok6 = createExtensionFromTrendline(6);
-      if (!ok5 || !ok6) return;
+      const ok5 = createExtensionFromTrendline(2);
+      if (!ok5) return;
+
+      const ok6 = createExtensionFromTrendline(3);
+      if (!ok6) return;
     } else {
       trendlineStates[5].isFixed = false;
       trendlineStates[6].isFixed = false;
@@ -1321,8 +1323,10 @@ Interacțiunea utilizatorului pentru adăugarea și ștergerea punctelor de pant
   $('activate-extensions').addEventListener('click', () => {
     if (!trendlineStates[2].isVisible || !trendlineStates[3].isVisible) {
       const ok2 = createExtensionFromTrendline(2);
+      if (!ok2) return;
+
       const ok3 = createExtensionFromTrendline(3);
-      if (!ok2 || !ok3) return;
+      if (!ok3) return;
     } else {
       trendlineStates[2].isFixed = false;
       trendlineStates[3].isFixed = false;
