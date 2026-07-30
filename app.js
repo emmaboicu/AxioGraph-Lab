@@ -245,20 +245,20 @@ function applyOriginMode(mode) {
   Modul Detail View rămâne activ și poate fi folosit imediat pe noua axă.*/
   const yAxisSensor =
     magnifierSensorsGroup?.querySelector(
-    '[data-axis="y"]'
+      '[data-axis="y"]'
     );
 
-    if (yAxisSensor) {
-      yAxisSensor.setAttribute(
-        'x',
-        originX - 9
-      );
-    }
+  if (yAxisSensor) {
+    yAxisSensor.setAttribute(
+      'x',
+      originX - 9
+    );
+  }
 
-    currentMagnifierView = null;
-    hideMagnifierLens();
-    updateOriginButtons();
-    redrawAllSpecialPoints();
+  currentMagnifierView = null;
+  hideMagnifierLens();
+  updateOriginButtons();
+  redrawAllSpecialPoints();
 }
 // ----------------------------------------------------
 
@@ -278,6 +278,35 @@ function updateOriginButtons() {
   );
 }
 
+/* Blochează alegerea originii până la următorul refresh. */
+function lockOriginButtons() {
+  $('origin-left').disabled = true;
+  $('origin-center').disabled = true;
+}
+
+/* Alege originea numai înainte de începerea desenării. */
+function chooseOriginMode(mode) {
+  const drawingAlreadyStarted =
+    Object.values(trendlineStates).some(
+      (state) => state.isVisible
+    ) ||
+    curveLineState.isVisible;
+
+  if (drawingAlreadyStarted) {
+    lockOriginButtons();
+
+    alert(
+      'The axis origin cannot be changed after drawing has started. ' +
+      'Refresh the page to choose another origin.'
+    );
+
+    return;
+  }
+
+  applyOriginMode(mode);
+  lockOriginButtons();
+}
+
 /*=========================================================================
 Golește vechiul strat steps; Construiește tickurile si textele;
 Le pune în coada de priorități pt OX si Oy. 
@@ -295,23 +324,23 @@ function refreshScaleStepLabels() {
 
   if (!isNaN(scaleX) && scaleX !== 0 && !isNaN(stepX) && stepX > 0) {
 
-      const minXValue =
-        ((x0 - originX) / 10) * scaleX;
+    const minXValue =
+      ((x0 - originX) / 10) * scaleX;
 
-      const maxXValue =
-        ((x0 + gridWidth - originX) / 10) * scaleX;
+    const maxXValue =
+      ((x0 + gridWidth - originX) / 10) * scaleX;
 
-      const firstStepIndex =
-        Math.ceil(minXValue / stepX);
+    const firstStepIndex =
+      Math.ceil(minXValue / stepX);
 
-      const lastStepIndex =
-        Math.floor(maxXValue / stepX);
+    const lastStepIndex =
+      Math.floor(maxXValue / stepX);
 
-      for (
-        let i = firstStepIndex;
-        i <= lastStepIndex;
-        i++
-      ) {
+    for (
+      let i = firstStepIndex;
+      i <= lastStepIndex;
+      i++
+    ) {
 
       const value = i * stepX;
       const x = originX + (value / scaleX) * 10;
@@ -325,7 +354,7 @@ function refreshScaleStepLabels() {
       mark.setAttribute('y2', y0 + 1.5);
       mark.setAttribute('stroke', '#146f9c');
       mark.setAttribute('stroke-width', 0.25);
-     
+
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.textContent = Number(value.toFixed(6));
       text.setAttribute('x', x);
@@ -361,7 +390,7 @@ function refreshScaleStepLabels() {
       mark.setAttribute('y2', y);
       mark.setAttribute('stroke', '#146f9c');
       mark.setAttribute('stroke-width', 0.25);
-      
+
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.textContent = Number(value.toFixed(6));
       text.setAttribute('x', originX - 3);
@@ -940,82 +969,84 @@ function readSavedNumber(value) {
 
 
 function applyWorkState(state) {
-   const isAxioGraphFile =
-      state &&
-      typeof state === 'object' &&
-      !Array.isArray(state) &&
-      state.app === 'AxioGraph';
+  const isAxioGraphFile =
+    state &&
+    typeof state === 'object' &&
+    !Array.isArray(state) &&
+    state.app === 'AxioGraph';
 
-    const hasSupportedSchema =
-      state?.schemaVersion === undefined ||
-      state.schemaVersion === 1;
+  const hasSupportedSchema =
+    state?.schemaVersion === undefined ||
+    state.schemaVersion === 1;
 
-    if (!isAxioGraphFile || !hasSupportedSchema) {
-      alert(
+  if (!isAxioGraphFile || !hasSupportedSchema) {
+    alert(
       'The selected file is not a valid or supported AxioGraph work file.'
-      );
+    );
     return;
-    }
+  }
 
-    const savedOriginMode =
-      state.originMode === 'left'
+  const savedOriginMode =
+    state.originMode === 'left'
       ? 'left'
       : 'center';
 
-    applyOriginMode(savedOriginMode);
+  applyOriginMode(savedOriginMode);
 
-    axisLabels.x = state.axisLabels?.x || '';
-    axisLabels.y = state.axisLabels?.y || '';
+  lockOriginButtons();
 
-    $('axis-label-input-x').value = axisLabels.x;
-    $('axis-label-input-y').value = axisLabels.y;
-    $('axis-label-x').textContent = axisLabels.x;
-    $('axis-label-y').textContent = axisLabels.y;
+  axisLabels.x = state.axisLabels?.x || '';
+  axisLabels.y = state.axisLabels?.y || '';
 
-    scaleXValue = state.scale?.x || '';
-    scaleYValue = state.scale?.y || '';
+  $('axis-label-input-x').value = axisLabels.x;
+  $('axis-label-input-y').value = axisLabels.y;
+  $('axis-label-x').textContent = axisLabels.x;
+  $('axis-label-y').textContent = axisLabels.y;
 
-    $('scale-input-x').value = scaleXValue;
-    $('scale-input-y').value = scaleYValue;
+  scaleXValue = state.scale?.x || '';
+  scaleYValue = state.scale?.y || '';
 
-    stepXValue = state.step?.x || '';
-    stepYValue = state.step?.y || '';
+  $('scale-input-x').value = scaleXValue;
+  $('scale-input-y').value = scaleYValue;
 
-    $('step-input-x').value = stepXValue;
-    $('step-input-y').value = stepYValue;
+  stepXValue = state.step?.x || '';
+  stepYValue = state.step?.y || '';
+
+  $('step-input-x').value = stepXValue;
+  $('step-input-y').value = stepYValue;
 
 
-    experimentalPointsData = (state.experimentalPoints || [])
-      .map(pt => ({ x: Number(pt.x), y: Number(pt.y) }))
-      .filter(pt => !Number.isNaN(pt.x) && !Number.isNaN(pt.y));
+  experimentalPointsData = (state.experimentalPoints || [])
+    .map(pt => ({ x: Number(pt.x), y: Number(pt.y) }))
+    .filter(pt => !Number.isNaN(pt.x) && !Number.isNaN(pt.y));
 
-    restoreTrendlineState(trendlineStates[1], state.trendlines?.[1]);
-    restoreTrendlineState(trendlineStates[2], state.trendlines?.[2]);
-    restoreTrendlineState(trendlineStates[3], state.trendlines?.[3]);
-    restoreTrendlineState(trendlineStates[4], state.trendlines?.[4]);
-    restoreTrendlineState(trendlineStates[5], state.trendlines?.[5]);
-    restoreTrendlineState(trendlineStates[6], state.trendlines?.[6]);
+  restoreTrendlineState(trendlineStates[1], state.trendlines?.[1]);
+  restoreTrendlineState(trendlineStates[2], state.trendlines?.[2]);
+  restoreTrendlineState(trendlineStates[3], state.trendlines?.[3]);
+  restoreTrendlineState(trendlineStates[4], state.trendlines?.[4]);
+  restoreTrendlineState(trendlineStates[5], state.trendlines?.[5]);
+  restoreTrendlineState(trendlineStates[6], state.trendlines?.[6]);
 
-    const savedCurve = state.curveLine;
-    curveLineState.isVisible = !!savedCurve?.isVisible;
-    curveLineState.isFixed = !!savedCurve?.isFixed;
-    curveLineState.points = (savedCurve?.points || [])
-      .map(pt => ({ x: Number(pt.x), y: Number(pt.y) }))
-      .filter(pt => !Number.isNaN(pt.x) && !Number.isNaN(pt.y))
-      .map(clampAndSnapPoint);
-    curveLineState.dragIndex = null;
-    curveLineState.pointerId = null;
+  const savedCurve = state.curveLine;
+  curveLineState.isVisible = !!savedCurve?.isVisible;
+  curveLineState.isFixed = !!savedCurve?.isFixed;
+  curveLineState.points = (savedCurve?.points || [])
+    .map(pt => ({ x: Number(pt.x), y: Number(pt.y) }))
+    .filter(pt => !Number.isNaN(pt.x) && !Number.isNaN(pt.y))
+    .map(clampAndSnapPoint);
+  curveLineState.dragIndex = null;
+  curveLineState.pointerId = null;
 
-    slopePointsData = [0, 1].map((index) => {
-      const pt = state.slopePoints?.[index];
-      if (!pt) return null;
+  slopePointsData = [0, 1].map((index) => {
+    const pt = state.slopePoints?.[index];
+    if (!pt) return null;
 
-      const x = Number(pt.x);
-      const y = Number(pt.y);
-      return !Number.isNaN(x) && !Number.isNaN(y) ? { x, y } : null;
-    });
+    const x = Number(pt.x);
+    const y = Number(pt.y);
+    return !Number.isNaN(x) && !Number.isNaN(y) ? { x, y } : null;
+  });
 
-    slopePointsData2 = [0, 1].map((index) => {
+  slopePointsData2 = [0, 1].map((index) => {
     const pt = state.slopePoints2?.[index];
     if (!pt) return null;
 
@@ -1068,7 +1099,7 @@ function applyWorkState(state) {
 
   $('intersection-y-value-2').value =
     intersectionPointsData2.y ?? '';
-/*-----------------------------------------------------------------*/
+  /*-----------------------------------------------------------------*/
   renderTrendline(1);
   renderTrendline(2);
   renderTrendline(3);
@@ -1137,15 +1168,14 @@ function loadWorkFromFile(event) {
    ================================================== ================*/
 
 function setupInputEvents() {
-
   $('origin-left').addEventListener(
-  'click',
-    () => applyOriginMode('left')
+    'click',
+    () => chooseOriginMode('left')
   );
 
   $('origin-center').addEventListener(
     'click',
-    () => applyOriginMode('center')
+    () => chooseOriginMode('center')
   );
 
   $('apply-scale').addEventListener('click', applyScales);
@@ -1870,11 +1900,11 @@ function showMagnifierAt(
   };
 
   renderMagnifierContent(
-  axis,
-  sourceMinX,
-  sourceMinY,
-  sourceWidth,
-  sourceHeight
+    axis,
+    sourceMinX,
+    sourceMinY,
+    sourceWidth,
+    sourceHeight
 );
 
 /*Măsoară dimensiunile reale ale lupei și ale containerului, 
