@@ -110,3 +110,25 @@ For trendlines and curve handles, pointer capture remains on the original SVG. D
 
 The Detail View renderer currently rebuilds its SVG content during dragging. `requestAnimationFrame` keeps this fluid in practical desktop and mobile testing. Further renderer optimization should only be considered if profiling reveals performance problems on slower devices.
 
+### Axis Origin and Final Visual Refinements
+
+The axis origin can be selected before beginning a graph:
+
+* **Mid** places OY at the centre of the grid;
+* **Left** places OY one major square inside the left edge, leaving room for negative values and axis labels.
+
+The selected origin updates coordinate conversion, axis labels, scale-step values and the OY Detail View sensor. It is saved as `originMode` in `.axio` files and restored automatically. Older files without this property default to **Mid**.
+
+After an explicit origin choice, both origin buttons remain locked until the page is refreshed. If drawing has already started with a trendline or curve, a late origin change is rejected to prevent SVG geometry from becoming inconsistent. Loaded work files also restore the origin in its locked state.
+
+Detail View can now be closed and deactivated by clicking or tapping anywhere on the SVG outside its displayed window. The existing OFF button remains available.
+
+Normal View was visually refined for dense experimental datasets:
+
+* axis values and Scale Steps use **Barlow Condensed**, size `3.4`, weight `700`;
+* experimental points use radius `0.6`;
+* experimental coordinate guides use stroke width `0.24`, dash pattern `1,1.8` and a muted transparent colour;
+* experimental axis values use reduced opacity;
+* special-value ticks and Scale Step ticks both use stroke width `0.25`.
+
+Detail View intentionally preserves its original **Poppins** typography and high-contrast pink values. This is a deliberate distinction: Normal View reduces visual density, while Detail View prioritizes enlarged, high-contrast reading.
