@@ -79,9 +79,8 @@ let intersectionPointsData1 = { x: null, y: null };
 let intersectionPointsData2 = { x: null, y: null };
 let hasUnsavedChanges = false;
 
-/* 
-Declarațiile lupei — vor fi găsite în init  MAGNIFIER SOURCE  DISPARE 
-*/
+/* ===================    DECLARAȚIILE LUPEI    ======================
+=============================================================*/
 
 let magnifierActive = false;
 /* Împărțirea fixă a axelor pentru Detail View */
@@ -103,6 +102,7 @@ const MAGNIFIER_OY_ALIGNMENT_OFFSET_PX = 4.5;
 let magnifierSensorsGroup;
 let magnifierLens;
 let magnifierSvg;
+let currentMagnifierView = null;
 
 /* ======================================================================
   MAGNIFIER       Trimite motorului LUPEI starea actuală a aplicației
@@ -141,6 +141,26 @@ function renderMagnifierContent(
 }
 /*--------------------------------------------------------------------*/
 
+/* ================================================================
+Redesenază lupa deschisă folosind ultima zonă memorată.
+=================================================================== */
+function refreshOpenMagnifier() {
+  if (
+    !magnifierActive ||
+    !currentMagnifierView ||
+    !magnifierLens ||
+    magnifierLens.hidden
+  ) return;
+
+  renderMagnifierContent(
+    currentMagnifierView.axis,
+    currentMagnifierView.sourceMinX,
+    currentMagnifierView.sourceMinY,
+    currentMagnifierView.sourceWidth,
+    currentMagnifierView.sourceHeight
+  );
+}
+/*---------------------------------------------------------------*/
 
 const trendlineStates = {
   1: { isVisible: false, isFixed: false, p1: null, p2: null, dragMode: null, pointerId: null, lastPoint: null },
@@ -601,6 +621,8 @@ function redrawAllSpecialPoints() {
   redrawSlopePoints();
 
   renderAxisMarkers(tickMarksGroup);
+
+  refreshOpenMagnifier();
 }
 
 /* ===================================================================
@@ -1750,11 +1772,20 @@ function showMagnifierAt(
 
     magnifierLens.style.width = lensWidth + 'px';
     magnifierLens.style.height = lensHeight + 'px';
-/*--------------------------------------------------------------------*/
+
 
   /* Trebuie afișată înainte să-i putem măsura dimensiunea */
   magnifierLens.hidden = false;
   magnifierLens.setAttribute('aria-hidden', 'false');
+
+  /* Memorează zona afișată pentru actualizările ulterioare. */
+  currentMagnifierView = {
+    axis,
+    sourceMinX,
+    sourceMinY,
+    sourceWidth,
+    sourceHeight
+  };
 
   renderMagnifierContent(
   axis,
@@ -1763,7 +1794,9 @@ function showMagnifierAt(
   sourceWidth,
   sourceHeight
 );
-/* treb modificat cred -------------------------*/
+
+/*Măsoară dimensiunile reale ale lupei și ale containerului, 
+apoi calculează poziția left și top.*/
 
   const containerRect =
     $('a4-container').getBoundingClientRect();
@@ -2080,6 +2113,7 @@ function setupMagnifierControls() {
       );
 
       if (!isActive) {
+        currentMagnifierView = null;
         hideMagnifierLens();
       }
   }
