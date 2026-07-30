@@ -6,7 +6,15 @@ export const y0 = 250;
 export const gridWidth = 240;
 export const gridHeight = 240;
 
-export const originX = x0 + gridWidth / 2;
+export let originX = x0 + gridWidth / 2;
+
+/* Stabilește poziția originii înainte de începerea lucrării. */
+export function setOriginMode(mode) {
+  originX =
+    mode === 'left'
+      ? x0 + 10
+      : x0 + gridWidth / 2;
+}
 
 export const gridFineStroke = 0.05;
 export const gridMediumStroke = 0.12;
@@ -81,7 +89,6 @@ export function drawAxes() {
   const axesGroup = document.getElementById('axes');
   axesGroup.innerHTML = '';
 
-  const originX = x0 + gridWidth / 2;
 
   const hAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
   const hCenterY = y0 + axisStroke / 2;
@@ -126,7 +133,7 @@ export function valueToGridX(value, scaleXValue) {
 
   if (isNaN(scaleValX) || scaleValX === 0 || isNaN(value)) return null;
 
-  const originX = x0 + gridWidth / 2;
+  
   const x = originX + Math.round((value / scaleValX) * 10);
 
   if (x < x0 || x > x0 + gridWidth) return null;

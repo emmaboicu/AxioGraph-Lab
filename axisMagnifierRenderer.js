@@ -613,23 +613,39 @@ function getMagnifierAxisValues(axis, context) {
       Number.isFinite(stepValue) &&
       stepValue > 0
     ) {
+
+    let firstIndex;
+    let lastIndex;
+
+    if (axis === 'x') {
+      const minimumValue =
+        ((x0 - originX) / 10) * scaleValue;
+
       const maximumValue =
-        axis === 'x'
-          ? (gridWidth / 2 / 10) * scaleValue
-          : (gridHeight / 10) * scaleValue;
+        ((x0 + gridWidth - originX) / 10) *
+        scaleValue;
 
-      const stepCount = Math.floor(
-        maximumValue / stepValue
-      );
+      firstIndex =
+        Math.ceil(minimumValue / stepValue);
 
-      const firstIndex =
-        axis === 'x' ? -stepCount : 1;
+      lastIndex =
+        Math.floor(maximumValue / stepValue);
+    } else {
+      const maximumValue =
+        (gridHeight / 10) * scaleValue;
 
-      for (
-        let index = firstIndex;
-        index <= stepCount;
-        index++
-      ) {
+      firstIndex = 1;
+
+      lastIndex =
+        Math.floor(maximumValue / stepValue);
+    }
+
+    for (
+      let index = firstIndex;
+      index <= lastIndex;
+      index++
+    ) {              
+
         if (index === 0) continue;
 
         const value = Number(

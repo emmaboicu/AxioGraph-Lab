@@ -6,6 +6,7 @@ import {
   gridWidth,
   gridHeight,
   originX,
+  setOriginMode,
   coordGuideStroke,
   clamp,
   clampPointToGrid,
@@ -65,6 +66,7 @@ let slopePointsGroup;
 let intersectionPointsGroup;
 
 const axisLabels = { x: '', y: '' };
+let originMode = 'center';
 
 let scaleXValue = '';
 let scaleYValue = '';
@@ -226,11 +228,60 @@ function valueToGridY(value) {
 function valuesToSvgPoint(valueX, valueY) {
   return sheetValuesToSvgPoint(valueX, valueY, scaleXValue, scaleYValue);
 }
+
+/* Aplică poziția aleasă pentru originea axelor. */
+function applyOriginMode(mode) {
+  originMode =
+    mode === 'left'
+      ? 'left'
+      : 'center';
+
+  setOriginMode(originMode);
+  drawAxes();
+
+  $('axis-label-y').setAttribute('x', originX);
+
+  /*Senzorul OY se mută cu axa. O lupă deschisă pe vechea poziție este închisă. 
+  Modul Detail View rămâne activ și poate fi folosit imediat pe noua axă.*/
+  const yAxisSensor =
+    magnifierSensorsGroup?.querySelector(
+    '[data-axis="y"]'
+    );
+
+    if (yAxisSensor) {
+      yAxisSensor.setAttribute(
+        'x',
+        originX - 9
+      );
+    }
+
+    currentMagnifierView = null;
+    hideMagnifierLens();
+    updateOriginButtons();
+    redrawAllSpecialPoints();
+}
 // ----------------------------------------------------
+
+/* Actualizează vizual alegerea axei OY Left / Mid. */
+function updateOriginButtons() {
+  const isLeft =
+    originMode === 'left';
+
+  $('origin-left').setAttribute(
+    'aria-pressed',
+    String(isLeft)
+  );
+
+  $('origin-center').setAttribute(
+    'aria-pressed',
+    String(!isLeft)
+  );
+}
 
 /*=========================================================================
 Golește vechiul strat steps; Construiește tickurile si textele;
-Le pune în coada de priorități pt OX si Oy
+Le pune în coada de priorități pt OX si Oy. 
+Adăugat comportamentul pentru origine mutată la stânga.
 ============================================================================*/
 function refreshScaleStepLabels() {
   if (!scaleStepMarksGroup) return;
@@ -243,11 +294,24 @@ function refreshScaleStepLabels() {
   const stepY = parseFloat(stepYValue);
 
   if (!isNaN(scaleX) && scaleX !== 0 && !isNaN(stepX) && stepX > 0) {
-    const maxXValue = (gridWidth / 2 / 10) * scaleX;
-    const numStepsX = Math.floor(maxXValue / stepX);
 
-    for (let i = -numStepsX; i <= numStepsX; i++) {
-      //if (i === 0) continue;
+      const minXValue =
+        ((x0 - originX) / 10) * scaleX;
+
+      const maxXValue =
+        ((x0 + gridWidth - originX) / 10) * scaleX;
+
+      const firstStepIndex =
+        Math.ceil(minXValue / stepX);
+
+      const lastStepIndex =
+        Math.floor(maxXValue / stepX);
+
+      for (
+        let i = firstStepIndex;
+        i <= lastStepIndex;
+        i++
+      ) {
 
       const value = i * stepX;
       const x = originX + (value / scaleX) * 10;
@@ -827,6 +891,7 @@ function getWorkState() {
     edition: 'Lab',
     schemaVersion: 1,
     savedAt: new Date().toISOString(),
+    originMode,
     axisLabels: {
       x: $('axis-label-input-x').value,
       y: $('axis-label-input-y').value
@@ -875,22 +940,29 @@ function readSavedNumber(value) {
 
 
 function applyWorkState(state) {
-  const isAxioGraphFile =
-    state &&
-    typeof state === 'object' &&
-    !Array.isArray(state) &&
-    state.app === 'AxioGraph';
+   const isAxioGraphFile =
+      state &&
+      typeof state === 'object' &&
+      !Array.isArray(state) &&
+      state.app === 'AxioGraph';
 
-  const hasSupportedSchema =
-    state?.schemaVersion === undefined ||
-    state.schemaVersion === 1;
+    const hasSupportedSchema =
+      state?.schemaVersion === undefined ||
+      state.schemaVersion === 1;
 
-  if (!isAxioGraphFile || !hasSupportedSchema) {
-    alert(
+    if (!isAxioGraphFile || !hasSupportedSchema) {
+      alert(
       'The selected file is not a valid or supported AxioGraph work file.'
-    );
+      );
     return;
-  }
+    }
+
+    const savedOriginMode =
+      state.originMode === 'left'
+      ? 'left'
+      : 'center';
+
+    applyOriginMode(savedOriginMode);
 
     axisLabels.x = state.axisLabels?.x || '';
     axisLabels.y = state.axisLabels?.y || '';
@@ -1065,6 +1137,16 @@ function loadWorkFromFile(event) {
    ================================================== ================*/
 
 function setupInputEvents() {
+
+  $('origin-left').addEventListener(
+  'click',
+    () => applyOriginMode('left')
+  );
+
+  $('origin-center').addEventListener(
+    'click',
+    () => applyOriginMode('center')
+  );
 
   $('apply-scale').addEventListener('click', applyScales);
   
@@ -1953,12 +2035,12 @@ function setupMagnifierEngine() {
   }
 /*----------------------------------------------------------------*/
 
-/* ========================TODO mobil — îmbunătățire opțională:
-Lupa funcționează prin tap/click pe axă.
-Pentru drag fluid din întreaga fereastră afișată, senzorii OX/OY
-ar trebui extinși la suprafața lupei, numai cât timp Detail View este activ,
-fără să intercepteze dreptele și prelungirile când lupa este oprită.
-=======================================================================*/
+  /* ========================TODO mobil — îmbunătățire opțională:
+  Lupa funcționează prin tap/click pe axă.
+  Pentru drag fluid din întreaga fereastră afișată, senzorii OX/OY
+  ar trebui extinși la suprafața lupei, numai cât timp Detail View este activ,
+  fără să intercepteze dreptele și prelungirile când lupa este oprită.
+  =======================================================================*/
   function createAxisSensor(axis) {
     const sensor = document.createElementNS(
       'http://www.w3.org/2000/svg',
@@ -1982,6 +2064,8 @@ fără să intercepteze dreptele și prelungirile când lupa este oprită.
     sensor.setAttribute('fill', 'transparent');
 
     sensor.setAttribute('class', 'magnifier-sensor');
+
+    sensor.dataset.axis = axis;
 
     //sensor.setAttribute('pointer-events', 'all');
     sensor.style.cursor = 'zoom-in';
@@ -2108,14 +2192,14 @@ function setupMagnifierControls() {
     magnifierTip.hidden = !isActive;
 
     magnifierSensorsGroup.setAttribute(
-        'pointer-events',
-        isActive ? 'all' : 'none'
-      );
+      'pointer-events',
+      isActive ? 'all' : 'none'
+    );
 
-      if (!isActive) {
-        currentMagnifierView = null;
-        hideMagnifierLens();
-      }
+    if (!isActive) {
+      currentMagnifierView = null;
+      hideMagnifierLens();
+    }
   }
 
   activateButton.addEventListener('click', () => {
@@ -2125,6 +2209,46 @@ function setupMagnifierControls() {
   deactivateButton.addEventListener('click', () => {
     setMagnifierActive(false);
   });
+
+  /* Închide Detail View la click/tap în afara lupei. */
+  svg.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (
+        !magnifierActive ||
+        magnifierLens.hidden
+      ) {
+        return;
+      }
+
+      const lensRect =
+        magnifierLens.getBoundingClientRect();
+
+      const pointerIsInsideLens =
+        event.clientX >= lensRect.left &&
+        event.clientX <= lensRect.right &&
+        event.clientY >= lensRect.top &&
+        event.clientY <= lensRect.bottom;
+
+      const touchedAxisSensor =
+        event.target.closest?.(
+          '.magnifier-sensor'
+        );
+
+      if (
+        pointerIsInsideLens ||
+        touchedAxisSensor
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      setMagnifierActive(false);
+    },
+    true
+  );
 
   setMagnifierActive(false);
 }

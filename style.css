@@ -487,6 +487,21 @@ button:disabled {
   gap: 8px;
 }
 
+.card-origin .row {
+  display: flex;
+}
+
+.card-origin .btn-apply-scale {
+  margin-top: 0;
+  left: 0;
+}
+.card-origin
+.btn-apply-scale[aria-pressed="true"] {
+  background-color: #1f1a60;
+  color: #ffffff;
+  border-color: #1f1a60;
+  box-shadow: none;
+}
 
 /* CARD 2B: Scales + Steps */
 .card-2 {
