@@ -22,7 +22,7 @@ export const gridMajorStroke = 0.2;
 
 export const axisStroke = 0.7;
 export const axisTickStroke = 0.28;
-export const coordGuideStroke = 0.28;
+export const coordGuideStroke = 0.24;
 
 export function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));

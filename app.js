@@ -360,8 +360,12 @@ function refreshScaleStepLabels() {
       text.setAttribute('x', x);
       text.setAttribute('y', y0 + 5);
       text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('font-size', '3.2');
-      text.setAttribute('font-family', 'Poppins, sans-serif');
+      text.setAttribute('font-size', '3.4');
+      text.setAttribute(
+        'font-family', 
+        '"Barlow Condensed", Arial, sans-serif'
+      );
+      text.setAttribute('font-weight', '700');
       text.setAttribute('fill', '#146f9c');
 
       queueAxisMarker({
@@ -396,8 +400,12 @@ function refreshScaleStepLabels() {
       text.setAttribute('x', originX - 3);
       text.setAttribute('y', y + 1.2);
       text.setAttribute('text-anchor', 'end');
-      text.setAttribute('font-size', '3.2');
-      text.setAttribute('font-family', 'Poppins, sans-serif');
+      text.setAttribute('font-size', '3.4');
+      text.setAttribute(
+        'font-family', 
+        '"Barlow Condensed", Arial, sans-serif'
+      );
+      text.setAttribute('font-weight', '700');
       text.setAttribute('fill', '#146f9c');
       queueAxisMarker({
         group: scaleStepMarksGroup,

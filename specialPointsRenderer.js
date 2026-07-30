@@ -39,9 +39,12 @@ export function drawExperimentalPoint(
     line.setAttribute('y1', y1);
     line.setAttribute('x2', x2);
     line.setAttribute('y2', y2);
-    line.setAttribute('stroke', '#931976');
+    line.setAttribute(
+      'stroke',
+      'rgba(116, 27, 96, 0.75)'
+    );
     line.setAttribute('stroke-width', coordGuideStroke);
-    line.setAttribute('stroke-dasharray', '1,1');
+    line.setAttribute('stroke-dasharray', '1,1.8');
     return line;
   };
 
@@ -51,7 +54,7 @@ export function drawExperimentalPoint(
   const point = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   point.setAttribute('cx', x);
   point.setAttribute('cy', y);
-  point.setAttribute('r', 0.7);
+  point.setAttribute('r', 0.6);
   point.setAttribute('fill', '#f63fcb');
   pointGroup.appendChild(point);
 
@@ -60,7 +63,7 @@ export function drawExperimentalPoint(
       axis: 'x',
       coord: x,
       label: valueX,
-      color: '#f63fcb',
+      color: 'rgba(213, 2, 136, 0.75)',
       priority: AXIS_LABEL_PRIORITY.experimental
   });
 
@@ -69,7 +72,7 @@ export function drawExperimentalPoint(
       axis: 'y',
       coord: y,
       label: valueY,
-      color: '#f63fcb',
+      color: 'rgba(213, 2, 136, 0.75)',
       priority: AXIS_LABEL_PRIORITY.experimental,
       pointX: x
   });

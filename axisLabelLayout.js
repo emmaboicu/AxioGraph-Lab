@@ -144,14 +144,14 @@ export function addAxisMarker({
   }
 
   tick.setAttribute('stroke', color);
-  tick.setAttribute('stroke-width', 0.45);
+  tick.setAttribute('stroke-width', 0.25);
 
   text.textContent = label;
   text.setAttribute('data-axis', axis);
   text.setAttribute('font-size', '3.4');
   text.setAttribute(
     'font-family',
-    'Poppins, Arial, sans-serif'
+    '"Barlow Condensed", Arial, sans-serif'
   );
   text.setAttribute('font-weight', '700');
   text.setAttribute('fill', color);
