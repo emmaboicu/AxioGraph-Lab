@@ -103,7 +103,7 @@ export function drawSlopePoint(
   guideV.setAttribute('y1', y0);
   guideV.setAttribute('x2', point.x);
   guideV.setAttribute('y2', point.y);
-  guideV.setAttribute('stroke', '#f06216');
+  guideV.setAttribute('stroke', '#ff4310');
   guideV.setAttribute('stroke-width', 0.25);
   guideV.setAttribute('stroke-dasharray', '2,2');
   group.appendChild(guideV);
@@ -113,7 +113,7 @@ export function drawSlopePoint(
   guideH.setAttribute('y1', point.y);
   guideH.setAttribute('x2', point.x);
   guideH.setAttribute('y2', point.y);
-  guideH.setAttribute('stroke', '#f06216');
+  guideH.setAttribute('stroke', '#ff4310');
   guideH.setAttribute('stroke-width', 0.25);
   guideH.setAttribute('stroke-dasharray', '2,2');
   group.appendChild(guideH);
@@ -122,7 +122,7 @@ export function drawSlopePoint(
   circle.setAttribute('cx', point.x);
   circle.setAttribute('cy', point.y);
   circle.setAttribute('r', 1);
-  circle.setAttribute('fill', '#f06216');
+  circle.setAttribute('fill', '#ff4310');
   circle.setAttribute('stroke', '#ffffff');
   circle.setAttribute('stroke-width', 0.35);
   group.appendChild(circle);
@@ -131,10 +131,11 @@ export function drawSlopePoint(
   text.textContent = label + '(' + pointData.x + '; ' + pointData.y + ')';
   text.setAttribute('x', point.x + 2.2);
   text.setAttribute('y', point.y - 2.2);
-  text.setAttribute('font-size', '3.4');
-  text.setAttribute('font-family', 'Poppins, Arial, sans-serif');
+  text.setAttribute('font-size', '4.4');
+  text.setAttribute('font-family', '"Barlow Condensed", Poppins, Arial, sans-serif');
   text.setAttribute('font-weight', '700');
-  text.setAttribute('fill', '#f06216');
+  text.setAttribute('letter-spacing', '0.4px');
+  text.setAttribute('fill', '#ff4310');
   group.appendChild(text);
  
   queueSpecialAxisMarker({
@@ -142,7 +143,7 @@ export function drawSlopePoint(
     axis: 'x',
     coord: point.x,
     label: pointData.x,
-    color: '#f06216',
+    color: '#ff3700',
     priority: AXIS_LABEL_PRIORITY.slope
   });
 
@@ -151,7 +152,7 @@ queueSpecialAxisMarker({
     axis: 'y',
     coord: point.y,
     label: pointData.y,
-    color: '#f06216',
+    color: '#ff3700',
     priority: AXIS_LABEL_PRIORITY.slope,
     pointX: point.x
   });

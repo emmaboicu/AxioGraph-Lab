@@ -2248,7 +2248,7 @@ function setupMagnifierControls() {
     setMagnifierActive(false);
   });
 
-  /* Închide Detail View la click/tap în afara lupei. */
+  /* Ascunde lupa la click/tap în afara ei, fără să dezactiveze Detail View. */
   svg.addEventListener(
     'pointerdown',
     (event) => {
@@ -2262,6 +2262,16 @@ function setupMagnifierControls() {
       const lensRect =
         magnifierLens.getBoundingClientRect();
 
+      const svgRect =
+        svg.getBoundingClientRect();
+
+      const isMobile =
+        window.matchMedia('(max-width: 700px)').matches;
+
+      const pointerIsInUpperHalf =
+        event.clientY >= svgRect.top &&
+        event.clientY <= svgRect.top + svgRect.height / 2;
+
       const pointerIsInsideLens =
         event.clientX >= lensRect.left &&
         event.clientX <= lensRect.right &&
@@ -2274,6 +2284,7 @@ function setupMagnifierControls() {
         );
 
       if (
+        (isMobile && !pointerIsInUpperHalf) ||
         pointerIsInsideLens ||
         touchedAxisSensor
       ) {
@@ -2283,7 +2294,8 @@ function setupMagnifierControls() {
       event.preventDefault();
       event.stopPropagation();
 
-      setMagnifierActive(false);
+      currentMagnifierView = null;
+      hideMagnifierLens();
     },
     true
   );

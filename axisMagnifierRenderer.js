@@ -22,6 +22,7 @@ import {
 } from './axisLabelLayout.js';
 
 const MAGNIFIER_SPECIAL_TEXT_SIZE = 3.4;
+const MAGNIFIER_MOBILE_TEXT_SCALE = 1.3;
 
 function isOriginValue(value) {
   return Math.abs(Number(value)) < 1e-9;
@@ -79,19 +80,24 @@ function createMagnifierText(
     'text'
   );
 
+  const textScale =
+    window.matchMedia('(max-width: 700px)').matches
+      ? normalScale * MAGNIFIER_MOBILE_TEXT_SCALE
+      : normalScale;
+
   text.textContent = textValue;
   text.setAttribute('x', x);
   text.setAttribute('y', y);
   text.setAttribute('text-anchor', anchor);
   text.setAttribute(
     'font-size',
-     size * normalScale
+     size * textScale
   );
   text.setAttribute('font-family', 'Poppins, Arial, sans-serif');
   text.setAttribute('font-weight', '700');
   text.setAttribute('fill', color);
   text.setAttribute('stroke', '#ffffff');
-  text.setAttribute('stroke-width', 0.35 * normalScale);
+  text.setAttribute('stroke-width', 0.35 * textScale);
   text.setAttribute('paint-order', 'stroke');
   text.setAttribute('pointer-events', 'none');
 
@@ -524,12 +530,21 @@ function getMagnifierAxisValues(axis, context) {
       return;
     }
 
-    const alreadyExists = items.some(
+    const existingIndex = items.findIndex(
       (item) =>
         Math.abs(Number(item.value) - Number(value)) < 1e-6
     );
 
-    if (alreadyExists) return;
+    if (
+      existingIndex !== -1 &&
+      items[existingIndex].priority >= priority
+    ) {
+      return;
+    }
+
+    if (existingIndex !== -1) {
+      items.splice(existingIndex, 1);
+    }
 
     const coord =
       axis === 'x'
@@ -605,7 +620,7 @@ function getMagnifierAxisValues(axis, context) {
 
       addValue(
         axis === 'x' ? pointData.x : pointData.y,
-        '#f06216',
+        '#ff4310',
         AXIS_LABEL_PRIORITY.slope,
         point.x
       );

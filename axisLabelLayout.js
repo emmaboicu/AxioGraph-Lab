@@ -10,8 +10,8 @@ import {
 
 export const AXIS_LABEL_PRIORITY = {
   step: 1,
-  slope: 2,
-  experimental: 3,
+  experimental: 2,
+  slope: 3,
   intercept: 4
 };
 
