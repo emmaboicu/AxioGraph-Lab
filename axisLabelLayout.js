@@ -127,20 +127,10 @@ export function addAxisMarker({
     tick.setAttribute('x2', originX + 1.5);
     tick.setAttribute('y2', coord);
 
-    const labelOnRight =
-      pointX !== null && pointX < originX;
-
-    text.setAttribute(
-      'x',
-      labelOnRight ? originX + 2.2 : originX - 2.2
-    );
-
+    /* În Normal View, valorile OY sunt afișate numai în stânga axei. */
+    text.setAttribute('x', originX - 2.2);
     text.setAttribute('y', coord + 1.2);
-
-    text.setAttribute(
-      'text-anchor',
-      labelOnRight ? 'start' : 'end'
-    );
+    text.setAttribute('text-anchor', 'end');
   }
 
   tick.setAttribute('stroke', color);

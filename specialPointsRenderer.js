@@ -41,10 +41,10 @@ export function drawExperimentalPoint(
     line.setAttribute('y2', y2);
     line.setAttribute(
       'stroke',
-      'rgba(116, 27, 96, 0.75)'
+      'rgba(20, 20, 173, 0.8)'
     );
     line.setAttribute('stroke-width', coordGuideStroke);
-    line.setAttribute('stroke-dasharray', '1,1.8');
+    line.setAttribute('stroke-dasharray', '1,1.2');
     return line;
   };
 
@@ -55,7 +55,7 @@ export function drawExperimentalPoint(
   point.setAttribute('cx', x);
   point.setAttribute('cy', y);
   point.setAttribute('r', 0.6);
-  point.setAttribute('fill', '#f63fcb');
+  point.setAttribute('fill', 'rgba(224, 17, 157,1)' );
   pointGroup.appendChild(point);
 
   queueSpecialAxisMarker({
@@ -63,7 +63,7 @@ export function drawExperimentalPoint(
       axis: 'x',
       coord: x,
       label: valueX,
-      color: 'rgba(213, 2, 136, 0.75)',
+      color: 'rgba(214, 20, 117, 0.8)',
       priority: AXIS_LABEL_PRIORITY.experimental
   });
 
@@ -72,7 +72,7 @@ export function drawExperimentalPoint(
       axis: 'y',
       coord: y,
       label: valueY,
-      color: 'rgba(213, 2, 136, 0.75)',
+      color: 'rgba(214, 20, 117, 0.8)',
       priority: AXIS_LABEL_PRIORITY.experimental,
       pointX: x
   });
@@ -207,7 +207,7 @@ export function drawIntersectionPoint(
   circle.setAttribute('cx', point.x);
   circle.setAttribute('cy', point.y);
   circle.setAttribute('r', 0.8);
-  circle.setAttribute('fill', '#9f1ef5');
+  circle.setAttribute('fill', 'rgba(43, 2, 81, 0.9)');
   circle.setAttribute('stroke', 'none');
 
   group.appendChild(circle);
@@ -218,7 +218,7 @@ export function drawIntersectionPoint(
       axis: 'x',
       coord: point.x,
       label: value,
-      color: '#9f1ef5',
+      color: 'rgba(106, 27, 154, 0.9)',
       priority: AXIS_LABEL_PRIORITY.intercept
     });
   }
@@ -229,7 +229,7 @@ export function drawIntersectionPoint(
       axis: 'y',
       coord: point.y,
       label: value,
-      color: '#9f1ef5',
+      color: 'rgba(106, 27, 154, 0.9)',
       priority: AXIS_LABEL_PRIORITY.intercept
     });
   }

@@ -455,6 +455,19 @@ function queueMagnifierAxisValue({
       normalScale,
       textSize
     );
+      const alternateLabelX = labelOnRight
+        ? tickCenter.x - 2.2 * normalScale
+        : tickCenter.x + 2.2 * normalScale;
+
+    alternateText = createMagnifierText(
+      value,
+      alternateLabelX,
+      tickCenter.y + 1.2 * normalScale,
+      labelOnRight ? 'end' : 'start',
+      color,
+      normalScale,
+      textSize
+    );
 
     markerCoord = tickCenter.y;
   }
@@ -554,7 +567,7 @@ function getMagnifierAxisValues(axis, context) {
 
       addValue(
         axis === 'x' ? data.x : data.y,
-        '#9f1ef5',
+        'rgba(106, 27, 154, 0.9)',
         AXIS_LABEL_PRIORITY.intercept
       );
     });
@@ -571,7 +584,7 @@ function getMagnifierAxisValues(axis, context) {
 
     addValue(
       axis === 'x' ? pointData.x : pointData.y,
-      '#f63fcb',
+      'rgba(214, 20, 117, 0.8)',
       AXIS_LABEL_PRIORITY.experimental,
       point.x
     );
@@ -657,7 +670,7 @@ function getMagnifierAxisValues(axis, context) {
           '#146f9c',
           AXIS_LABEL_PRIORITY.step,
           null,
-          3.2,
+          3.4,
           0.25
         );
       }
