@@ -132,3 +132,48 @@ Normal View was visually refined for dense experimental datasets:
 * special-value ticks and Scale Step ticks both use stroke width `0.25`.
 
 Detail View intentionally preserves its original **Poppins** typography and high-contrast pink values. This is a deliberate distinction: Normal View reduces visual density, while Detail View prioritizes enlarged, high-contrast reading.
+
+## Recent improvements — Axis Detail View and mobile usability
+
+### Axis labels and visual hierarchy
+
+* In Normal View, special values on the OY axis are displayed only on the left side to reduce visual clutter.
+* In Axis Detail View, OY labels may use both sides of the axis. If the preferred position overlaps another label, the renderer attempts the opposite side.
+* Label priority was corrected to:
+  `Intercepts > Slope Points > Experimental Points > Steps`.
+* Detail View duplicate detection now preserves the value with the highest priority. A slope value therefore replaces an experimental value when both represent the same coordinate.
+* Experimental guide lines were changed from pink to blue and use a denser dash pattern so they remain visible over the blue graph-paper grid.
+* Experimental and intercept values now use separate, less visually aggressive colors.
+* Slope-point styling was improved with a stronger orange, a larger Barlow Condensed label and slightly increased letter spacing.
+
+### Detail View typography
+
+* Poppins is now explicitly loaded for Axis Detail View.
+* Step and special-value text sizes were aligned.
+* On screens up to 700 px wide, Detail View text is enlarged by 30%.
+* Desktop text sizing remains unchanged.
+
+### Persistent Detail View mode
+
+Detail View now behaves as a persistent inspection mode:
+
+* Activating Detail View enables the axis sensors.
+* Tapping or clicking an axis opens the lens.
+* Clicking outside the lens hides only the lens; it does not deactivate Detail View.
+* Clicking an axis again immediately reopens the lens.
+* The `OFF` button is the only control that completely disables Detail View.
+
+On mobile:
+
+* A tap in the upper half of the SVG may hide the lens.
+* Touches and scrolling in the lower half do not close it.
+* The user can keep the lens open while scrolling to the input fields and entering measured values.
+
+This workflow makes it possible to inspect a graph location, enter an intercept or another measured value, and immediately return to the graph without repeatedly activating Detail View.
+
+Tested successfully on both desktop and mobile.
+
+
+
+
+
